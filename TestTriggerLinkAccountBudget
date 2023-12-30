@@ -1,0 +1,568 @@
+@isTest(seeAllData = false)
+public class TestTriggerLinkAccountBudget { 
+    
+    @isTest static void testInInsert(){ 
+ 
+        List<Account>        accounts = new List<Account>();
+        List<Amount_Budget__c> budgets  = new List<Amount_Budget__c>();
+
+        Amount_Budget__c budgetForAccount = new Amount_Budget__c(Name = 'W-005-1Q', Activo__c = true, Gss_Id__c = 'W-014');
+
+        insert budgetForAccount;
+
+        Account acc = new Account(Name = 'Account Test', Budget__c = budgetForAccount.Id, Gss_Id_edit__c = 'W-014');
+        acc.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('N2 Agency (IATA Branch)').getRecordTypeId();
+        accounts.add(acc);
+
+        for (Integer i=0; i<6; i++) {
+          Account accTest = new Account(Name = 'Account Test'+i, Gss_Id_edit__c = 'W-01'+i);
+          accTest.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('N2 Agency (IATA Branch)').getRecordTypeId();
+
+          accounts.add(accTest);  
+        }
+
+        insert accounts; 
+
+        Amount_Budget__c budgetWhitAccount = new Amount_Budget__c(Name = 'W-003-1Q', Activo__c = true, Gss_Id__c = 'W-014');
+        budgets.add(budgetWhitAccount);
+ 
+        for (Integer i=0; i<3; i++) {
+          Amount_Budget__c budget = new Amount_Budget__c(Name = 'W-00'+i+'-1Q', Activo__c = true, Gss_Id__c = 'W-01'+i);
+
+          budgets.add(budget);  
+        }
+
+
+      Test.startTest(); 
+        try {
+          insert  budgets;
+      }catch (Exception e){
+        Boolean expectedExceptionThrown =  e.getMessage().contains('Hay presupuestos activos con el mismo GSS Id') ? true : false;
+            System.AssertEquals(expectedExceptionThrown, true);
+      }
+      Test.stopTest();
+
+    }
+
+    @isTest static void testInUpdate() {
+      
+      //Map<Id,Amount_Budget__c> newMap = new Map<Id, Amount_Budget__c>();
+      //Map<Id,Amount_Budget__c> oldMap = new Map<Id, Amount_Budget__c>();
+      List<Account>        accounts = new List<Account>();
+        List<Amount_Budget__c> oldMap = new List<Amount_Budget__c>();
+      List<Amount_Budget__c> newMap = new List<Amount_Budget__c>();
+
+      Amount_Budget__c budget1 = new Amount_Budget__c();
+      budget1.Name = 'W-020-1Q';
+        budget1.Activo__c = true;
+        budget1.Gss_Id__c = 'W-016';
+        oldMap.add(budget1);
+
+      Amount_Budget__c budget2 = new Amount_Budget__c();
+        budget2.Name = 'W-021-1Q';
+        budget2.Activo__c = false;
+        budget2.Gss_Id__c = 'W-017';
+        oldMap.add(budget2);
+    
+        Amount_Budget__c budget3 = new Amount_Budget__c();
+        budget3.Name = 'W-022-1Q';
+        budget3.Activo__c = false;
+        budget3.Gss_Id__c = 'W-018';
+        oldMap.add(budget3);
+        
+        Amount_Budget__c budget4 = new Amount_Budget__c();
+        budget4.Name = 'W-023-1Q';
+        budget4.Activo__c = true;
+        budget4.Gss_Id__c = 'W-019';
+        budget4.Monto_Q1_Currency__c = 1000;
+        oldMap.add(budget4);
+        System.debug(oldMap.get(3).Id);
+    
+    insert oldMap;//Insert List of Amount Budgets
+         
+    Account accTest = new Account(Name = 'Account Test 1', Gss_Id_edit__c = 'W-016', Budget__c = oldMap.get(0).Id);
+    accTest.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('N2 Agency (IATA Branch)').getRecordTypeId();
+    accounts.add(accTest);      
+
+      Account accTest2 = new Account(Name = 'Account Test 2', Gss_Id_edit__c = 'W-017', Budget__c = oldMap.get(1).Id);
+    accTest2.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('N2 Agency (IATA Branch)').getRecordTypeId();
+    accounts.add(accTest2);  
+        
+        Account accTest3 = new Account(Name = 'Account Test 3', Gss_Id_edit__c = 'W-018' , Budget__c = null);
+    accTest3.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('N2 Agency (IATA Branch)').getRecordTypeId();
+    accounts.add(accTest3);
+        
+        Account accTest4 = new Account(Name = 'Account Test 4', Gss_Id_edit__c = 'W-019' , Budget__c = oldMap.get(3).Id);
+    accTest4.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('N2 Agency (IATA Branch)').getRecordTypeId();
+    accounts.add(accTest4);  
+
+    insert accounts;
+        
+        System.debug(accounts.get(3).Budget__c);
+        
+        budget1.Activo__c = false; 
+    newMap.add(budget1);
+
+    budget2.Activo__c = true;
+    newMap.add(budget2);
+        
+        budget3.Activo__c = true;
+        newMap.add(budget3);
+        
+        budget4.Monto_Q2_Currency__c = 1000;
+        newMap.add(budget4);
+        
+    Test.startTest();
+      try {
+        update newMap;
+                System.debug(newMap.get(3).Id);
+      }catch (Exception e){
+        Boolean expectedExceptionThrown =  e.getMessage().contains('Hay presupuestos activos con el mismo GSS Id') ? true : false;
+            System.AssertEquals(expectedExceptionThrown, true);
+      }
+    Test.stopTest();
+    }
+
+    @isTest static void testAccountWhitOutBudget() {
+
+      Map<Id,Amount_Budget__c> newMap = new Map<Id, Amount_Budget__c>();
+      Map<Id,Amount_Budget__c> oldMap = new Map<Id, Amount_Budget__c>();
+      List<Amount_Budget__c> toUpdate = new List<Amount_Budget__c>();
+
+      Amount_Budget__c budget = new Amount_Budget__c(Name = 'W-030-2Q', Activo__c = false, Gss_Id__c = 'W-011');
+      insert budget;
+      oldMap.put(budget.Id, budget);
+
+      budget.Activo__c = true;
+    newMap.put(budget.Id, budget);
+
+    Account parentAcc = new Account(Name = 'BCD TRAVEL SA DE CV', Gss_Id__c = 'W-011', Budget__c = null );
+      parentAcc.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('N1 Agency (Home IATA)').getRecordTypeId();
+      insert parentAcc;
+
+      Account accTest = new Account(Name = 'Account Child ', ParentId = parentAcc.Id, Budget__c = null);
+    accTest.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('N2 Agency (IATA Branch)').getRecordTypeId();
+
+    insert accTest;
+
+    toUpdate = newMap.values();  
+
+    Test.startTest();
+        try{
+            update toUpdate;
+        }catch(Exception e){
+            System.debug('Error' + e);
+        }
+            
+        Test.stopTest();   
+    }
+
+    @isTest static void testInsertCorporates() {
+
+      List<Account>        corporates = new List<Account>();
+      List<Amount_Budget__c> budgets    = new List<Amount_Budget__c>();
+
+      Account corporate1      = new Account(Name = 'Corporate 1', Id_Presupuesto__c = null);
+      corporate1.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('L2 AM Corporate').getRecordTypeId();
+      insert corporate1;   
+
+      Amount_Budget__c budget1 = new Amount_Budget__c(Name = 'W-042-CQ', Activo__c = true, Monto__c = 23000, Presupuesto_corporativo__c = corporate1.Id);
+      budget1.RecordTypeId = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Corporativos').getRecordTypeId();
+      budgets.add(budget1);
+
+      Amount_Budget__c budget2 = new Amount_Budget__c(Name = 'W-043-CQ', Activo__c = true, Monto__c = 34200, Presupuesto_corporativo__c = corporate1.Id);
+      budget2.RecordTypeId = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Corporativos').getRecordTypeId();
+      budgets.add(budget2);
+
+      Test.startTest();
+        try {
+          insert budgets;
+      }catch (Exception e){
+        Boolean expectedExceptionThrown =  e.getMessage().contains('Hay presupuestos activos relacionados a este corporativo') ? true : false;
+            System.AssertEquals(expectedExceptionThrown, true);
+      }
+      Test.stopTest();
+    }
+
+    @isTest static void testInUpdateCorporates() {
+
+      Map<Id,Amount_Budget__c> newMap   = new Map<Id, Amount_Budget__c>();
+      List<Account>          accounts = new List<Account>();
+      List<Amount_Budget__c>   toUpdate = new List<Amount_Budget__c>();
+
+    Account corporate1      = new Account(Name = 'Corporate 1', Id_Presupuesto__c = null);
+      corporate1.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('L2 AM Corporate').getRecordTypeId();
+      insert corporate1;
+
+      Account corporate2      = new Account(Name = 'Corporate 2', Id_Presupuesto__c = null);
+      corporate2.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('L2 AM Corporate').getRecordTypeId();
+      insert corporate2;
+
+      Account corporate3      = new Account(Name = 'Corporate 3', Id_Presupuesto__c = null);
+      corporate3.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('L2 AM Corporate').getRecordTypeId();
+      insert corporate3;
+
+      Account corporate4      = new Account(Name = 'Corporate 4', Id_Presupuesto__c = null);
+      corporate4.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('L2 AM Corporate').getRecordTypeId();
+      insert corporate4;
+
+      Account corporate5      = new Account(Name = 'Corporate 5', Id_Presupuesto__c = null);
+      corporate5.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('L2 AM Corporate').getRecordTypeId();
+      insert corporate5;
+
+    Amount_Budget__c budget1 = new Amount_Budget__c(Name = 'W-044-CQ', Activo__c = false, Monto__c = 2000, Presupuesto_corporativo__c = corporate1.Id);
+      budget1.RecordTypeId = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Corporativos').getRecordTypeId();
+      insert budget1;
+
+      Amount_Budget__c budget2 = new Amount_Budget__c(Name = 'W-045-CQ', Activo__c = true, Monto__c = 2000, Presupuesto_corporativo__c = corporate2.Id);
+      budget2.RecordTypeId = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Corporativos').getRecordTypeId();
+      insert budget2;
+
+      Amount_Budget__c budget3 = new Amount_Budget__c(Name = 'W-045-CQ', Activo__c = false, Monto__c = 2000, Presupuesto_corporativo__c = corporate1.Id);
+      budget3.RecordTypeId = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Corporativos').getRecordTypeId();
+      insert budget3;
+
+      Amount_Budget__c budget4 = new Amount_Budget__c(Name = 'W-046-CQ', Activo__c = true, Monto__c = 2000, Presupuesto_corporativo__c = corporate3.Id, Presupuesto_UsadoQ1__c = 500);
+      budget4.RecordTypeId = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Corporativos').getRecordTypeId();
+      insert budget4;
+
+       Amount_Budget__c budget5 = new Amount_Budget__c(Name = 'W-047-CQ', Activo__c = true, Monto__c = 2000, Presupuesto_corporativo__c = corporate4.Id, Presupuesto_UsadoQ1__c = 500);
+      budget5.RecordTypeId = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Corporativos').getRecordTypeId();
+      insert budget5;
+
+      budget1.Activo__c = true;
+      newMap.put(budget1.Id, budget1);
+
+      budget2.Activo__c = false;
+      newMap.put(budget2.Id, budget2);
+
+      budget3.Activo__c = true;
+      newMap.put(budget3.Id, budget3);
+
+      budget4.Presupuesto_UsadoQ1__c = 800;
+      newMap.put(budget4.Id, budget4);
+
+      budget5.Presupuesto_corporativo__c = corporate5.Id;
+      newMap.put(budget5.Id, budget5);
+
+    toUpdate = newMap.values();
+
+    Test.startTest();
+      try {
+        update toUpdate;
+      }catch (Exception e){
+        Boolean expectedExceptionThrown =  e.getMessage().contains('Hay presupuestos activos para este corporativo') ? true : false;
+            System.AssertEquals(expectedExceptionThrown, true);
+      }
+    Test.stopTest();
+    }
+
+    @isTest static void testInsertExecutive() {
+
+      List<Amount_Budget__c> budgets    = new List<Amount_Budget__c>();
+      List<User> executives = new List<User>();
+        
+        Profile exe = [SELECT Id FROM Profile WHERE Name='Executive 1'];
+        
+      User executive1 = new User(Alias = 'standt', Email='GssReestructura1@testorg.com',EmailEncodingKey='UTF-8', LastName='Testing', LanguageLocaleKey='en_US', 
+            LocaleSidKey='en_US', ProfileId = exe.Id,TimeZoneSidKey='America/Los_Angeles', UserName='GssReestructura1@testorg.com',  Recibe_presupuesto__c = true, IsActive = true);
+            executives.add(executive1);
+        User executive2 = new User(Alias = 'standt', Email='GssReestructura2@testorg.com',EmailEncodingKey='UTF-8', LastName='Testing', LanguageLocaleKey='en_US', 
+            LocaleSidKey='en_US', ProfileId = exe.Id,TimeZoneSidKey='America/Los_Angeles', UserName='GssReestructura2@testorg.com', Recibe_presupuesto__c = true, IsActive = true);
+            executives.add(executive2);            
+            insert executives;
+  	
+        System.runAs(executive1){
+            Amount_Budget__c budget1 = new Amount_Budget__c(Name = 'W-050-EQ', Activo__c = true, Monto__c = 23000, Usuario__c = executives.get(0).Id, Presupuesto_UsadoQ1__c = 500);
+      	budget1.RecordTypeId = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Ejecutivos').getRecordTypeId(); 
+      	budgets.add(budget1);
+
+      	Amount_Budget__c budget2 = new Amount_Budget__c(Name = 'W-051-EQ', Activo__c = true, Monto__c = 2000, Usuario__c = executives.get(1).Id, Presupuesto_UsadoQ1__c = 200);
+      	budget2.RecordTypeId = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Ejecutivos').getRecordTypeId(); 
+      	budgets.add(budget2);
+
+      Test.startTest();
+        try {
+          insert budgets;
+      }catch (Exception e){
+        System.debug('Error ' + e);
+      }
+      Test.stopTest();
+        }
+      
+    }
+
+    @isTest static void testInUpdateExecutive() {
+
+      List<Amount_Budget__c>   budgets  = new List<Amount_Budget__c>();
+        List<User> executives = new List<User>();
+      //Map<Id,Amount_Budget__c> newMap   = new Map<Id, Amount_Budget__c>();
+      List<Amount_Budget__c>  oldBudgets = new List<Amount_Budget__c>();
+        List<Amount_Budget__c>   newBudgets = new List<Amount_Budget__c>();
+
+       Profile exe = [SELECT Id FROM Profile WHERE Name='Executive 1'];
+         
+        User executive1 = new User(Alias = 'standt', Email='GssReestructura11@testorg.com',EmailEncodingKey='UTF-8', LastName='Testing', LanguageLocaleKey='en_US', 
+            LocaleSidKey='en_US', ProfileId = exe.Id,TimeZoneSidKey='America/Los_Angeles', UserName='GssReestructura11@testorg.com',  Recibe_presupuesto__c = true, IsActive = true);
+            executives.add(executive1);
+        User executive2 = new User(Alias = 'standt', Email='GssReestructura21@testorg.com',EmailEncodingKey='UTF-8', LastName='Testing', LanguageLocaleKey='en_US', 
+            LocaleSidKey='en_US', ProfileId = exe.Id,TimeZoneSidKey='America/Los_Angeles', UserName='GssReestructura21@testorg.com', Recibe_presupuesto__c = true, IsActive = true);
+            executives.add(executive2);
+        User executive3 = new User(Alias = 'standt', Email='GssReestructura31@testorg.com',EmailEncodingKey='UTF-8', LastName='Testing', LanguageLocaleKey='en_US', 
+            LocaleSidKey='en_US', ProfileId = exe.Id,TimeZoneSidKey='America/Los_Angeles', UserName='GssReestructura31@testorg.com', Recibe_presupuesto__c = true, IsActive = true);
+            executives.add(executive3);
+        User executive4 = new User(Alias = 'standt', Email='GssReestructura41@testorg.com',EmailEncodingKey='UTF-8', LastName='Testing', LanguageLocaleKey='en_US', 
+            LocaleSidKey='en_US', ProfileId = exe.Id,TimeZoneSidKey='America/Los_Angeles', UserName='GssReestructura41@testorg.com', Recibe_presupuesto__c = true, IsActive = true);
+            executives.add(executive4);
+            
+            insert executives;
+            
+        system.runAs(executive1){
+            Amount_Budget__c budget1 = new Amount_Budget__c();
+        budget1.Name = 'W-052-EQ';
+          budget1.Activo__c = true;
+          budget1.Usuario__c = executives.get(0).id;
+          budget1.Monto_Q1_Currency__c = 1000;
+          budget1.RecordTypeId = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Ejecutivos').getRecordTypeId(); 
+        oldBudgets.add(budget1);
+            
+            Amount_Budget__c budget2 = new Amount_Budget__c();
+      budget2.Name = 'W-052-EQ';
+        budget2.Activo__c = false;
+        budget2.Usuario__c = executives.get(1).id;
+        budget2.RecordTypeId = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Ejecutivos').getRecordTypeId(); 
+      oldBudgets.add(budget2);
+
+       Amount_Budget__c budget3 = new Amount_Budget__c();
+      budget3.Name = 'W-053-EQ';
+        budget3.Activo__c = false;
+        budget3.Usuario__c = null;
+        budget3.RecordTypeId = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Ejecutivos').getRecordTypeId(); 
+      oldBudgets.add(budget3);
+
+      Amount_Budget__c budget4 = new Amount_Budget__c();
+      budget4.Name = 'W-054-EQ';
+        budget4.Activo__c = true;
+        //budget4.Usuario__c = executive4.id;
+        budget4.RecordTypeId = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Ejecutivos').getRecordTypeId(); 
+      oldBudgets.add(budget4);
+        
+        Amount_Budget__c budget5 = new Amount_Budget__c();
+      budget5.Name = 'W-055-EQ';
+        budget5.Activo__c = true;
+        budget5.Usuario__c = executives.get(2).id;
+        budget5.Monto_Q1_Currency__c = 1000;
+        budget5.RecordTypeId = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Ejecutivos').getRecordTypeId(); 
+      oldBudgets.add(budget5);
+        
+        insert oldBudgets;
+        
+        budget1.Monto_Q1_Currency__c = 1000;
+      budget1.Activo__c = false;
+      newBudgets.add(budget1);
+
+        budget2.Activo__c = true;
+        newBudgets.add(budget2);
+    
+        budget3.Activo__c = false;
+      newBudgets.add(budget3);
+
+    budget4.Usuario__c = executives.get(3).Id;
+      newBudgets.add(budget4);
+        
+        budget5.Monto_Q2_Currency__c = 2000;
+        newBudgets.add(budget5);
+        
+
+    Test.startTest();
+      try {
+        update newBudgets;
+      }catch (Exception e){
+        System.debug('Error' + e);
+      }
+    Test.stopTest();  
+            
+        }
+      
+
+       
+    }
+    
+    @isTest static void testInAgenciesCaseUpdate(){
+         List<Amount_Budget__c> budgets = new List<Amount_Budget__c>();
+        List<Reserva__c> reservas = new List<Reserva__c>();    
+        List<Account> accounts = new List<Account>();
+            
+        List<Case>   newAncillariesCases = new List<Case>();
+      List<Case>   oldAncillariesCases = new List<Case>();
+        
+        List<Case>   newNonAncillariesCases = new List<Case>();
+        List<Case>   oldNonAncillariesCases = new List<Case>();
+        
+        Amount_Budget__c budget1 = new Amount_Budget__c();
+        budget1.Name = 'W031';
+        budget1.Activo__c = true;
+        budget1.ActivoQ1__c = true;
+        budget1.Monto_Q1_Currency__c = 1000;
+        budget1.Porcentaje_Ancillaries_Q1__c = 80;
+        budget1.Porcentaje_No_Ancillaries_Q1__c = 20;
+        budgets.add(budget1);
+            
+         Amount_Budget__c budget2 = new Amount_Budget__c();
+        budget2.Name = 'W032';
+        budget2.Activo__c = true;
+        budget2.ActivoQ2__c = true;
+        budget2.Monto_Q2_Currency__c = 1000;
+        budget2.Porcentaje_Ancillaries_Q2__c = 60;
+        budget2.Porcentaje_No_Ancillaries_Q2__c = 40;
+        budgets.add(budget2);
+            
+        Amount_Budget__c budget3 = new Amount_Budget__c();
+        budget3.Name = 'W033';
+        budget3.Activo__c = true;
+        budget3.ActivoQ3__c = true;
+        budget3.Monto_Q3_Currency__c = 1000;
+        budget3.Porcentaje_Ancillaries_Q3__c = 60;
+        budget3.Porcentaje_No_Ancillaries_Q3__c = 40;
+        budgets.add(budget3);
+            
+        Amount_Budget__c budget4 = new Amount_Budget__c();
+        budget4.Name = 'W034';
+        budget4.Activo__c = true;
+        budget4.ActivoQ4__c = true;
+        budget4.Monto_Q4_Currency__c = 1000;
+        budget4.Porcentaje_Ancillaries_Q4__c = 70;
+        budget4.Porcentaje_No_Ancillaries_Q4__c = 30;
+        budgets.add(budget4);
+        
+        insert budgets;
+        
+        Account acc1 = new Account();
+        acc1.name = 'Account test';
+        acc1.Budget__c = budgets.get(0).Id;
+        acc1.Gss_Id_edit__c = 'W031';
+        acc1.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('N2 Agency (IATA Branch)').getRecordTypeId();    
+      accounts.add(acc1);
+            
+        Account acc2 = new Account();
+        acc2.name = 'Account test';
+        acc2.Budget__c = budgets.get(1).Id;
+        acc2.Gss_Id_edit__c = 'W032';
+        acc2.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('N2 Agency (IATA Branch)').getRecordTypeId();    
+      accounts.add(acc2);
+            
+        Account acc3 = new Account();
+        acc3.name = 'Account test';
+        acc3.Budget__c = budgets.get(2).Id;
+        acc3.Gss_Id_edit__c = 'W033';
+        acc3.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('N2 Agency (IATA Branch)').getRecordTypeId();    
+      accounts.add(acc3);
+            
+        Account acc4 = new Account();
+        acc4.name = 'Account test';
+        acc4.Budget__c = budgets.get(3).Id;
+        acc4.Gss_Id_edit__c = 'W034';
+        acc4.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('N2 Agency (IATA Branch)').getRecordTypeId();    
+      accounts.add(acc4);
+            
+        Account acc5 = new Account();
+        acc5.name = 'Account test';
+        acc5.Budget__c = budgets.get(1).Id;
+        acc5.Gss_Id_edit__c = 'W032';
+        acc5.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('N2 Agency (IATA Branch)').getRecordTypeId();    
+      accounts.add(acc5);
+        
+        insert accounts;
+        
+        Reserva__c reservaCase1 = new Reserva__c();
+        reservaCase1.Name = 'YIAEPE';
+        reservaCase1.Pasajero__c = 1;
+        reservaCase1.Vuelo__c = '16000';
+        reservaCase1.Bookin_IATA__c = 'IataTest';
+        reservaCase1.Ruta__c = 'MEX/MTY';
+        reservaCase1.Fecha_de_vuelo__c = '01-30T13:00';
+        reservaCase1.SPID__c = '5000000002650';
+        reservas.add(reservaCase1);
+        
+         Reserva__c reservaCase2 = new Reserva__c();
+        reservaCase2.Name = 'YIAEPA';
+        reservaCase2.Pasajero__c = 1;
+        reservaCase2.Vuelo__c = '18000';
+        reservaCase2.Bookin_IATA__c = 'IataTest';
+        reservaCase2.Ruta__c = 'SIN/CUN';
+        reservaCase2.Fecha_de_vuelo__c = '01-30T13:00';
+        reservaCase2.SPID__c = '5000000002650';
+        reservas.add(reservaCase2);
+            
+        insert reservas;    
+            
+            
+            
+            
+            
+        //Ancillaries Cases.
+        Case case1 = new Case(Status = 'Nuevo', Priority = 'Medium', Tipogss__c = 'Waivers Premium', Concepto__c ='CAMBIO DE CLASE', Sub_Concepto__c  = '2 NIVELES', Monto_Waiver__c = 600, se_cobra__c = accounts.get(0).Id, Agencia_emisora__c = accounts.get(0).Id);
+         oldAncillariesCases.add(case1);
+        Case case1_Sincrono = new Case(Status = 'Nuevo', Priority = 'Medium', Tipogss__c = 'Waivers Premium', Concepto__c ='CAMBIO DE CLASE', Sub_Concepto__c  = '2 NIVELES', Monto_Waiver__c = 600, se_cobra__c = accounts.get(0).Id, Agencia_emisora__c = accounts.get(0).Id);
+         oldAncillariesCases.add(case1_Sincrono);
+        Case case2 = new Case(Status = 'Nuevo', Priority = 'Medium', Tipogss__c = 'Waivers Premium', Concepto__c ='CAMBIO DE CLASE', Sub_Concepto__c  = '2 NIVELES', Monto_Waiver__c = 600, se_cobra__c = accounts.get(1).Id, Agencia_emisora__c = accounts.get(1).Id);
+      oldAncillariesCases.add(case2);
+        Case case3 = new Case(Status = 'Nuevo', Priority = 'Medium', Tipogss__c = 'Waivers Premium', Concepto__c ='CAMBIO DE CLASE', Sub_Concepto__c  = '2 NIVELES', Monto_Waiver__c = 600, se_cobra__c = accounts.get(2).Id, Agencia_emisora__c = accounts.get(2).Id);
+         oldAncillariesCases.add(case3);
+        Case case4 = new Case(Status = 'Nuevo', Priority = 'Medium', Tipogss__c = 'Waivers Premium', Concepto__c ='CAMBIO DE CLASE', Sub_Concepto__c  = '2 NIVELES', Monto_Waiver__c = 600, se_cobra__c = accounts.get(3).Id, Agencia_emisora__c = accounts.get(3).Id);
+         oldAncillariesCases.add(case4);
+        System.debug(oldAncillariesCases);
+        
+        try{
+            insert oldAncillariesCases;
+            //insert oldNonAncillariesCases;
+        }catch(Exception e){
+            System.debug('Error' + e);
+        }
+        
+        // Case 1 
+        case1.Tipogss__c     = 'Waivers Premium';
+      case1.Concepto__c     = 'UPGRADE';
+      case1.Sub_Concepto__c = 'COMPRA ASCENSO';
+      case1.Monto_Waiver__c = 300;
+      case1.Status      = 'Confirmado';
+        newAncillariesCases.add(case1);
+            
+        case1_Sincrono.Tipogss__c     = 'Waivers Premium';
+      case1_Sincrono.Concepto__c     = 'UPGRADE';
+      case1_Sincrono.Sub_Concepto__c = 'COMPRA ASCENSO';
+      case1_Sincrono.Monto_Waiver__c = 400;
+      case1_Sincrono.Status      = 'Confirmado';
+        newAncillariesCases.add(case1_Sincrono);
+            
+        case2.Tipogss__c     = 'Waivers Premium';
+      case2.Concepto__c     = 'UPGRADE';
+      case2.Sub_Concepto__c = 'COMPRA ASCENSO';
+      case2.Monto_Waiver__c = 300;
+      case2.Status      = 'Confirmado';
+        newAncillariesCases.add(case2);
+            
+        case3.Tipogss__c     = 'Waivers Premium';
+      case3.Concepto__c     = 'UPGRADE';
+      case3.Sub_Concepto__c = 'COMPRA ASCENSO';
+      case3.Monto_Waiver__c = 300;
+      case3.Status      = 'Confirmado';
+        newAncillariesCases.add(case3);
+        
+        case4.Tipogss__c     = 'Waivers Premium';
+      case4.Concepto__c     = 'UPGRADE';
+      case4.Sub_Concepto__c = 'COMPRA ASCENSO';
+      case4.Monto_Waiver__c = 300;
+      case4.Status      = 'Confirmado';
+        newAncillariesCases.add(case4);
+                     
+        Test.startTest();
+        try{
+            update newAncillariesCases;
+            //update newNonAncillariesCases;
+        }catch(Exception e){
+            System.debug('Error' + e);
+        }
+        Test.stopTest();
+    }
+}
