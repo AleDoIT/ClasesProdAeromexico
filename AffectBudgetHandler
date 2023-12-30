@@ -1,0 +1,1035 @@
+public class AffectBudgetHandler {
+
+	public static Boolean flagRunTrigger  = true;
+	public static Boolean flagRunDiscount = true;
+
+	public static Boolean getFlagRunTrigger() {
+		return flagRunTrigger;
+	}   
+
+	public static Boolean getFlagDIscount() {
+		return flagRunDiscount;
+	}
+
+	public static void changeFlagRunTrigger(Boolean value) {
+		flagRunTrigger = value;
+	}
+
+	public static void changeFlagRunDiscount(Boolean value) {
+		flagRunDiscount = value;
+	}
+
+
+
+    public static Map<Id,List<Decimal>> corporateBudgetsToUpdateMap(List<list<String>> discountToCorporates, Map<Id,Amount_Budget__c> budgets){
+		List<Amount_Budget__c> amountCorpList = new List<Amount_Budget__c>();
+		List<Decimal> listToDiscount = new List<Decimal>();
+		Map<Id,List<Decimal>> mapToUpdate = new Map<Id, List<Decimal>>(); 
+		for(List<String> discountCorp : discountToCorporates){
+			Amount_Budget__c budgetToUpdateElement = new Amount_Budget__c();
+			Decimal subtotalPresupuesto = 0;
+			Decimal ancillariesDiscount = 0;
+			Decimal NonAncillariesDiscount = 0;
+			if (discountCorp[0] == budgets.get(discountCorp[0]).Id){
+				//Presupuesto Q1
+				System.debug(discountCorp[0]);
+				System.debug(string.valueOf(budgets.get(discountCorp[0]).Id));
+				System.debug('Avance a clase corporate');
+				if(mapToUpdate.containsKey(discountCorp[0])){
+					subtotalPresupuesto = mapToUpdate.get(discountCorp[0])[0] + double.valueOf(discountCorp[1]);
+					if(discountCorp[2] == 'ANC'){
+						ancillariesDiscount = mapToUpdate.get(discountCorp[0])[1] + double.valueOf(discountCorp[1]);
+						NonAncillariesDiscount = mapToUpdate.get(discountCorp[0])[2];
+						listToDiscount.add(subtotalPresupuesto);
+						listToDiscount.add(ancillariesDiscount);
+						listToDiscount.add(NonAncillariesDiscount);
+						mapToUpdate.put(budgets.get(discountCorp[0]).Id, listToDiscount);
+					}else if(discountCorp[2] == 'NON-ANC'){
+						ancillariesDiscount = mapToUpdate.get(discountCorp[0])[1];
+						NonAncillariesDiscount = mapToUpdate.get(discountCorp[0])[2] + double.valueOf(discountCorp[1]);
+						listToDiscount.add(subtotalPresupuesto);
+						listToDiscount.add(ancillariesDiscount);
+						listToDiscount.add(NonAncillariesDiscount);
+						mapToUpdate.put(budgets.get(discountCorp[0]).Id, listToDiscount);
+					}
+				}else{
+				if(budgets.get(discountCorp[0]).ActivoQ1__c == true){
+					System.debug('ActivoQ1 true');
+					if(budgets.get(discountCorp[0]).Presupuesto_UsadoQ1__c == null){
+						budgets.get(discountCorp[0]).Presupuesto_UsadoQ1__c = 0.00;
+						}
+						//budgetToUpdateElement.Id = budgets.get(discountCorp[0]).Id;
+					subtotalPresupuesto = budgets.get(discountCorp[0]).Presupuesto_UsadoQ1__c + double.valueOf(discountCorp[1]); //Increment the budget used.
+					if(discountCorp[2] == 'ANC'){
+						if(budgets.get(discountCorp[0]).Ancillaries_usado_Q1__c == null){
+							budgets.get(discountCorp[0]).Ancillaries_usado_Q1__c = 0;
+						}
+						if(budgets.get(discountCorp[0]).Non_Ancillaries_usado_Q1__c == null){
+							budgets.get(discountCorp[0]).Non_Ancillaries_usado_Q1__c = 0;
+						}
+						ancillariesDiscount = budgets.get(discountCorp[0]).Ancillaries_usado_Q1__c + double.valueOf(discountCorp[1]);//Increment ancillaries Discount
+						NonAncillariesDiscount = budgets.get(discountCorp[0]).Non_Ancillaries_usado_Q1__c; //Save this value in case we looking for a non ancillaries discount
+						listToDiscount.add(subtotalPresupuesto);
+						listToDiscount.add(ancillariesDiscount);
+						listToDiscount.add(NonAncillariesDiscount);
+						mapToUpdate.put(budgets.get(discountCorp[0]).Id, listToDiscount);
+						System.debug(String.valueof(listToDiscount));
+						//budgetToUpdateElement.Ancillaries_usado_Q1__c = ancillariesDiscount;
+					}
+					else if(discountCorp[2] == 'NON-ANC'){
+						if(budgets.get(discountCorp[0]).Ancillaries_usado_Q1__c == null){
+							budgets.get(discountCorp[0]).Ancillaries_usado_Q1__c = 0;
+						}
+						if(budgets.get(discountCorp[0]).Non_Ancillaries_usado_Q1__c == null){
+							budgets.get(discountCorp[0]).Non_Ancillaries_usado_Q1__c = 0;
+						}
+						ancillariesDiscount = budgets.get(discountCorp[0]).Ancillaries_usado_Q1__c;
+						NonAncillariesDiscount = budgets.get(discountCorp[0]).Non_Ancillaries_usado_Q1__c + double.valueOf(discountCorp[1]);
+						listToDiscount.add(subtotalPresupuesto);
+						listToDiscount.add(ancillariesDiscount);
+						listToDiscount.add(NonAncillariesDiscount);
+						mapToUpdate.put(budgets.get(discountCorp[0]).Id, listToDiscount);
+						//budgetToUpdateElement.Non_Ancillaries_usado_Q1__c = ancillariesDiscount;
+					}
+					else{
+						System.debug('No hay ancillaries a modificar');
+					}	
+				}	
+				//presupuesto Q2
+				else if(budgets.get(discountCorp[0]).ActivoQ2__c == true){
+					if(budgets.get(discountCorp[0]).Presupuesto_UsadoQ2__c == null){
+						budgets.get(discountCorp[0]).Presupuesto_UsadoQ2__c = 0.00;
+						}
+
+					subtotalPresupuesto = budgets.get(discountCorp[0]).Presupuesto_UsadoQ2__c + double.valueOf(discountCorp[1]); //Increment the budget used.
+					if(discountCorp[2] == 'ANC'){
+						if(budgets.get(discountCorp[0]).Ancillaries_usado_Q2__c == null){
+							budgets.get(discountCorp[0]).Ancillaries_usado_Q2__c = 0;
+						}
+						if(budgets.get(discountCorp[0]).Non_Ancillaries_usado_Q2__c == null){
+							budgets.get(discountCorp[0]).Non_Ancillaries_usado_Q2__c = 0;
+						}
+						ancillariesDiscount = budgets.get(discountCorp[0]).Ancillaries_usado_Q2__c + double.valueOf(discountCorp[1]);//Increment ancillaries Discount
+						NonAncillariesDiscount = budgets.get(discountCorp[0]).Non_Ancillaries_usado_Q2__c; //Save this value in case we looking for a non ancillaries discount
+						listToDiscount.add(subtotalPresupuesto);
+						listToDiscount.add(ancillariesDiscount);
+						listToDiscount.add(NonAncillariesDiscount);
+						mapToUpdate.put(budgets.get(discountCorp[0]).Id, listToDiscount);
+						System.debug(String.valueof(listToDiscount));
+						//budgetToUpdateElement.Ancillaries_usado_Q1__c = ancillariesDiscount;
+					}
+					else if(discountCorp[2] == 'NON-ANC'){
+						if(budgets.get(discountCorp[0]).Ancillaries_usado_Q2__c == null){
+							budgets.get(discountCorp[0]).Ancillaries_usado_Q2__c = 0;
+						}
+						if(budgets.get(discountCorp[0]).Non_Ancillaries_usado_Q2__c == null){
+							budgets.get(discountCorp[0]).Non_Ancillaries_usado_Q2__c = 0;
+						}
+						ancillariesDiscount = budgets.get(discountCorp[0]).Ancillaries_usado_Q2__c;
+						NonAncillariesDiscount = budgets.get(discountCorp[0]).Non_Ancillaries_usado_Q2__c + double.valueOf(discountCorp[1]);
+						listToDiscount.add(subtotalPresupuesto);
+						listToDiscount.add(ancillariesDiscount);
+						listToDiscount.add(NonAncillariesDiscount);
+						mapToUpdate.put(budgets.get(discountCorp[0]).Id, listToDiscount);
+						System.debug(String.valueof(listToDiscount));
+						System.debug(mapToUpdate);
+						//budgetToUpdateElement.Non_Ancillaries_usado_Q1__c = ancillariesDiscount;
+					}
+					else{
+						System.debug('No hay ancillaries a modificar');
+					}	
+				}	
+				//presupuesto Q3
+				else if(budgets.get(discountCorp[0]).ActivoQ3__c == true){
+					if(budgets.get(discountCorp[0]).Presupuesto_UsadoQ3__c == null){
+						budgets.get(discountCorp[0]).Presupuesto_UsadoQ3__c = 0.00;
+						}
+						//budgetToUpdateElement.Id = budgets.get(discountCorp[0]).Id;
+					subtotalPresupuesto = budgets.get(discountCorp[0]).Presupuesto_UsadoQ3__c + double.valueOf(discountCorp[1]); //Increment the budget used.
+					if(discountCorp[2] == 'ANC'){
+						if(budgets.get(discountCorp[0]).Ancillaries_usado_Q3__c == null){
+							budgets.get(discountCorp[0]).Ancillaries_usado_Q3__c = 0;
+						}
+						if(budgets.get(discountCorp[0]).Non_Ancillaries_usado_Q3__c == null){
+							budgets.get(discountCorp[0]).Non_Ancillaries_usado_Q3__c = 0;
+						}
+						ancillariesDiscount = budgets.get(discountCorp[0]).Ancillaries_usado_Q3__c + double.valueOf(discountCorp[1]);//Increment ancillaries Discount
+						NonAncillariesDiscount = budgets.get(discountCorp[0]).Non_Ancillaries_usado_Q3__c; //Save this value in case we looking for a non ancillaries discount
+						listToDiscount.add(subtotalPresupuesto);
+						listToDiscount.add(ancillariesDiscount);
+						listToDiscount.add(NonAncillariesDiscount);
+						mapToUpdate.put(budgets.get(discountCorp[0]).Id, listToDiscount);
+						System.debug(String.valueof(listToDiscount));
+						//budgetToUpdateElement.Ancillaries_usado_Q1__c = ancillariesDiscount;
+					}
+					else if(discountCorp[2] == 'NON-ANC'){
+						if(budgets.get(discountCorp[0]).Ancillaries_usado_Q3__c == null){
+							budgets.get(discountCorp[0]).Ancillaries_usado_Q3__c = 0;
+						}
+						if(budgets.get(discountCorp[0]).Non_Ancillaries_usado_Q3__c == null){
+							budgets.get(discountCorp[0]).Non_Ancillaries_usado_Q3__c = 0;
+						}
+						ancillariesDiscount = budgets.get(discountCorp[0]).Ancillaries_usado_Q3__c;
+						NonAncillariesDiscount = budgets.get(discountCorp[0]).Non_Ancillaries_usado_Q3__c + double.valueOf(discountCorp[1]);
+						listToDiscount.add(subtotalPresupuesto);
+						listToDiscount.add(ancillariesDiscount);
+						listToDiscount.add(NonAncillariesDiscount);
+						mapToUpdate.put(budgets.get(discountCorp[0]).Id, listToDiscount);
+						System.debug(String.valueof(listToDiscount));
+						System.debug(mapToUpdate);
+						//budgetToUpdateElement.Non_Ancillaries_usado_Q1__c = ancillariesDiscount;
+					}
+					else{
+						System.debug('No hay ancillaries a modificar');
+					}
+				}
+				//PresupuestoQ4
+				else if(budgets.get(discountCorp[0]).ActivoQ4__c == true){
+					if(budgets.get(discountCorp[0]).Presupuesto_UsadoQ4__c == null){
+						budgets.get(discountCorp[0]).Presupuesto_UsadoQ4__c = 0.00;
+						}
+						//budgetToUpdateElement.Id = budgets.get(discountCorp[0]).Id;
+					subtotalPresupuesto = budgets.get(discountCorp[0]).Presupuesto_UsadoQ4__c + double.valueOf(discountCorp[1]); //Increment the budget used.
+					if(discountCorp[2] == 'ANC'){
+						if(budgets.get(discountCorp[0]).Ancillaries_usado_Q4__c == null){
+							budgets.get(discountCorp[0]).Ancillaries_usado_Q4__c = 0;
+						}
+						if(budgets.get(discountCorp[0]).Non_Ancillaries_usado_Q4__c == null){
+							budgets.get(discountCorp[0]).Non_Ancillaries_usado_Q4__c = 0;
+						}
+						ancillariesDiscount = budgets.get(discountCorp[0]).Ancillaries_usado_Q4__c + double.valueOf(discountCorp[1]);//Increment ancillaries Discount
+						NonAncillariesDiscount = budgets.get(discountCorp[0]).Non_Ancillaries_usado_Q4__c; //Save this value in case we looking for a non ancillaries discount
+						listToDiscount.add(subtotalPresupuesto);
+						listToDiscount.add(ancillariesDiscount);
+						listToDiscount.add(NonAncillariesDiscount);
+						mapToUpdate.put(budgets.get(discountCorp[0]).Id, listToDiscount);
+						System.debug(String.valueof(listToDiscount));
+						//budgetToUpdateElement.Ancillaries_usado_Q1__c = ancillariesDiscount;
+					}
+					else if(discountCorp[2] == 'NON-ANC'){
+						if(budgets.get(discountCorp[0]).Ancillaries_usado_Q4__c == null){
+							budgets.get(discountCorp[0]).Ancillaries_usado_Q4__c = 0;
+						}
+						if(budgets.get(discountCorp[0]).Non_Ancillaries_usado_Q4__c == null){
+							budgets.get(discountCorp[0]).Non_Ancillaries_usado_Q4__c = 0;
+						}
+						ancillariesDiscount = budgets.get(discountCorp[0]).Ancillaries_usado_Q4__c;
+						NonAncillariesDiscount = budgets.get(discountCorp[0]).Non_Ancillaries_usado_Q4__c + double.valueOf(discountCorp[1]);
+						listToDiscount.add(subtotalPresupuesto);
+						listToDiscount.add(ancillariesDiscount);
+						listToDiscount.add(NonAncillariesDiscount);
+						mapToUpdate.put(budgets.get(discountCorp[0]).Id, listToDiscount);
+						//budgetToUpdateElement.Non_Ancillaries_usado_Q1__c = ancillariesDiscount;
+					}
+					else{
+						System.debug('No hay ancillaries a modificar');
+					}
+				}
+				}//Else break
+			}
+    	}
+		return mapToUpdate;
+	}
+
+    public static Map<Id,List<Decimal>> executivesBudgetsToUpdateMap(List<List<String>> discountToExecutives, Map<Id,Amount_Budget__c> budgets) {
+		List<Amount_Budget__c> amountCorpList = new List<Amount_Budget__c>();
+		List<Decimal> listToDiscount = new List<Decimal>();
+		Map<Id, List<Decimal>> mapToUpdate = new Map<Id, List<Decimal>>();
+		for(List<String> discountExec : discountToExecutives){
+			Amount_Budget__c budgetToUpdateElement = new Amount_Budget__c();
+			Decimal subtotalPresupuesto = 0;
+			Decimal ancillariesDiscount = 0;
+			Decimal NonAncillariesDiscount = 0;
+			if (discountExec[0] == budgets.get(discountExec[0]).Id){
+				//Presupuesto Q1
+				System.debug(discountExec[0]);
+				System.debug(string.valueOf(budgets.get(discountExec[0]).Id));
+				System.debug('Avance a clase corporate');
+				if(mapToUpdate.containsKey(discountExec[0])){
+					subtotalPresupuesto = mapToUpdate.get(discountExec[0])[0] + double.valueOf(discountExec[1]);
+					if(discountExec[2] == 'ANC'){
+						ancillariesDiscount = mapToUpdate.get(discountExec[0])[1] + double.valueOf(discountExec[1]);
+						NonAncillariesDiscount = mapToUpdate.get(discountExec[0])[2];
+						listToDiscount.add(subtotalPresupuesto);
+						listToDiscount.add(ancillariesDiscount);
+						listToDiscount.add(NonAncillariesDiscount);
+						mapToUpdate.put(budgets.get(discountExec[0]).Id, listToDiscount);
+					}else if(discountExec[2] == 'NON-ANC'){
+						ancillariesDiscount = mapToUpdate.get(discountExec[0])[1];
+						NonAncillariesDiscount = mapToUpdate.get(discountExec[0])[2] + double.valueOf(discountExec[1]);
+						listToDiscount.add(subtotalPresupuesto);
+						listToDiscount.add(ancillariesDiscount);
+						listToDiscount.add(NonAncillariesDiscount);
+						mapToUpdate.put(budgets.get(discountExec[0]).Id, listToDiscount);
+					}
+				}
+				else{
+				if(budgets.get(discountExec[0]).ActivoQ1__c == true){
+					System.debug('ActivoQ1 true');
+					if(budgets.get(discountExec[0]).Presupuesto_UsadoQ1__c == null){
+						budgets.get(discountExec[0]).Presupuesto_UsadoQ1__c = 0.00;
+						}
+						subtotalPresupuesto = budgets.get(discountExec[0]).Presupuesto_UsadoQ1__c + double.valueOf(discountExec[1]); //Increment the non ancillaries used budget
+						//budgetToUpdateElement.Id = budgets.get(discountExec[0]).Id;
+					if(discountExec[2] == 'ANC'){
+						if(budgets.get(discountExec[0]).Ancillaries_usado_Q1__c == null){
+							budgets.get(discountExec[0]).Ancillaries_usado_Q1__c = 0;
+						}
+						if(budgets.get(discountExec[0]).Non_Ancillaries_usado_Q1__c == null){
+							budgets.get(discountExec[0]).Non_Ancillaries_usado_Q1__c = 0;
+						}
+						ancillariesDiscount = budgets.get(discountExec[0]).Ancillaries_usado_Q1__c + double.valueOf(discountExec[1]);
+						NonAncillariesDiscount = budgets.get(discountExec[0]).Non_Ancillaries_usado_Q1__c;
+						listToDiscount.add(subtotalPresupuesto);
+						listToDiscount.add(ancillariesDiscount);
+						listToDiscount.add(NonAncillariesDiscount);
+						mapToUpdate.put(budgets.get(discountExec[0]).Id, listToDiscount);
+						System.debug(String.valueof(listToDiscount));
+						//budgetToUpdateElement.Ancillaries_usado_Q1__c = ancillariesDiscount;
+					}
+					else if(discountExec[2] == 'NON-ANC'){
+						if(budgets.get(discountExec[0]).Ancillaries_usado_Q1__c == null){
+							budgets.get(discountExec[0]).Ancillaries_usado_Q1__c = 0;
+						}
+						if(budgets.get(discountExec[0]).Non_Ancillaries_usado_Q1__c == null){
+							budgets.get(discountExec[0]).Non_Ancillaries_usado_Q1__c = 0;
+						}
+						ancillariesDiscount = budgets.get(discountExec[0]).Ancillaries_usado_Q1__c;
+						NonAncillariesDiscount = budgets.get(discountExec[0]).Non_Ancillaries_usado_Q1__c + double.valueOf(discountExec[1]);
+						listToDiscount.add(subtotalPresupuesto);
+						listToDiscount.add(ancillariesDiscount);
+						listToDiscount.add(NonAncillariesDiscount);
+						mapToUpdate.put(budgets.get(discountExec[0]).Id, listToDiscount);
+						//budgetToUpdateElement.Non_Ancillaries_usado_Q1__c = ancillariesDiscount;
+					}
+					else{
+						System.debug('No hay ancillaries a modificar');
+					}	
+				}
+				//presupuesto Q2
+				else if(budgets.get(discountExec[0]).ActivoQ2__c == true){
+					if(budgets.get(discountExec[0]).Presupuesto_UsadoQ2__c == null){
+						budgets.get(discountExec[0]).Presupuesto_UsadoQ2__c = 0.00;
+						}
+						subtotalPresupuesto = budgets.get(discountExec[0]).Presupuesto_UsadoQ2__c + double.valueOf(discountExec[1]); //Increment the non ancillaries used budget
+						//budgetToUpdateElement.Id = budgets.get(discountExec[0]).Id;
+					if(discountExec[2] == 'ANC'){
+						if(budgets.get(discountExec[0]).Ancillaries_usado_Q2__c == null){
+							budgets.get(discountExec[0]).Ancillaries_usado_Q2__c = 0;
+						}
+						if(budgets.get(discountExec[0]).Non_Ancillaries_usado_Q2__c == null){
+							budgets.get(discountExec[0]).Non_Ancillaries_usado_Q2__c = 0;
+						}
+						ancillariesDiscount = budgets.get(discountExec[0]).Ancillaries_usado_Q2__c + double.valueOf(discountExec[1]);
+						NonAncillariesDiscount = budgets.get(discountExec[0]).Non_Ancillaries_usado_Q2__c;
+						listToDiscount.add(subtotalPresupuesto);
+						listToDiscount.add(ancillariesDiscount);
+						listToDiscount.add(NonAncillariesDiscount);
+						mapToUpdate.put(budgets.get(discountExec[0]).Id, listToDiscount);
+						System.debug(String.valueof(listToDiscount));
+						//budgetToUpdateElement.Ancillaries_usado_Q1__c = ancillariesDiscount;
+					}
+					else if(discountExec[2] == 'NON-ANC'){
+						if(budgets.get(discountExec[0]).Ancillaries_usado_Q1__c == null){
+							budgets.get(discountExec[0]).Ancillaries_usado_Q1__c = 0;
+						}
+						if(budgets.get(discountExec[0]).Non_Ancillaries_usado_Q1__c == null){
+							budgets.get(discountExec[0]).Non_Ancillaries_usado_Q1__c = 0;
+						}
+						ancillariesDiscount = budgets.get(discountExec[0]).Ancillaries_usado_Q1__c;
+						NonAncillariesDiscount = budgets.get(discountExec[0]).Non_Ancillaries_usado_Q1__c + double.valueOf(discountExec[1]);
+						listToDiscount.add(subtotalPresupuesto);
+						listToDiscount.add(ancillariesDiscount);
+						listToDiscount.add(NonAncillariesDiscount);
+						mapToUpdate.put(budgets.get(discountExec[0]).Id, listToDiscount);
+						//budgetToUpdateElement.Non_Ancillaries_usado_Q1__c = ancillariesDiscount;
+					}
+					else{
+						System.debug('No hay ancillaries a modificar');
+					}
+				}	
+				//presupuesto Q3
+				else if(budgets.get(discountExec[0]).ActivoQ3__c == true){
+					if(budgets.get(discountExec[0]).Presupuesto_UsadoQ3__c == null){
+						budgets.get(discountExec[0]).Presupuesto_UsadoQ3__c = 0.00;
+						}
+						subtotalPresupuesto = budgets.get(discountExec[0]).Presupuesto_UsadoQ3__c + double.valueOf(discountExec[1]); //Increment the non ancillaries used budget
+						//budgetToUpdateElement.Id = budgets.get(discountExec[0]).Id;
+					if(discountExec[2] == 'ANC'){
+						if(budgets.get(discountExec[0]).Ancillaries_usado_Q3__c == null){
+							budgets.get(discountExec[0]).Ancillaries_usado_Q3__c = 0;
+						}
+						if(budgets.get(discountExec[0]).Non_Ancillaries_usado_Q3__c == null){
+							budgets.get(discountExec[0]).Non_Ancillaries_usado_Q3__c = 0;
+						}
+						ancillariesDiscount = budgets.get(discountExec[0]).Ancillaries_usado_Q3__c + double.valueOf(discountExec[1]);
+						NonAncillariesDiscount = budgets.get(discountExec[0]).Non_Ancillaries_usado_Q3__c;
+						listToDiscount.add(subtotalPresupuesto);
+						listToDiscount.add(ancillariesDiscount);
+						listToDiscount.add(NonAncillariesDiscount);
+						mapToUpdate.put(budgets.get(discountExec[0]).Id, listToDiscount);
+						System.debug(String.valueof(listToDiscount));
+						//budgetToUpdateElement.Ancillaries_usado_Q1__c = ancillariesDiscount;
+					}
+					else if(discountExec[2] == 'NON-ANC'){
+						if(budgets.get(discountExec[0]).Ancillaries_usado_Q3__c == null){
+							budgets.get(discountExec[0]).Ancillaries_usado_Q3__c = 0;
+						}
+						if(budgets.get(discountExec[0]).Non_Ancillaries_usado_Q3__c == null){
+							budgets.get(discountExec[0]).Non_Ancillaries_usado_Q3__c = 0;
+						}
+						ancillariesDiscount = budgets.get(discountExec[0]).Ancillaries_usado_Q3__c;
+						NonAncillariesDiscount = budgets.get(discountExec[0]).Non_Ancillaries_usado_Q3__c + double.valueOf(discountExec[1]);
+						listToDiscount.add(subtotalPresupuesto);
+						listToDiscount.add(ancillariesDiscount);
+						listToDiscount.add(NonAncillariesDiscount);
+						mapToUpdate.put(budgets.get(discountExec[0]).Id, listToDiscount);
+						//budgetToUpdateElement.Non_Ancillaries_usado_Q1__c = ancillariesDiscount;
+					}
+					else{
+						System.debug('No hay ancillaries a modificar');
+					}
+				}
+				//PresupuestoQ4
+				else if(budgets.get(discountExec[0]).ActivoQ4__c == true){
+					if(budgets.get(discountExec[0]).Presupuesto_UsadoQ4__c == null){
+						budgets.get(discountExec[0]).Presupuesto_UsadoQ4__c = 0.00;
+						}
+						subtotalPresupuesto = budgets.get(discountExec[0]).Presupuesto_UsadoQ4__c + double.valueOf(discountExec[1]); //Increment the non ancillaries used budget
+						//budgetToUpdateElement.Id = budgets.get(discountExec[0]).Id;
+					if(discountExec[2] == 'ANC'){
+						if(budgets.get(discountExec[0]).Ancillaries_usado_Q4__c == null){
+							budgets.get(discountExec[0]).Ancillaries_usado_Q4__c = 0;
+						}
+						if(budgets.get(discountExec[0]).Non_Ancillaries_usado_Q4__c == null){
+							budgets.get(discountExec[0]).Non_Ancillaries_usado_Q4__c = 0;
+						}
+						ancillariesDiscount = budgets.get(discountExec[0]).Ancillaries_usado_Q4__c + double.valueOf(discountExec[1]);
+						NonAncillariesDiscount = budgets.get(discountExec[0]).Non_Ancillaries_usado_Q4__c;
+						listToDiscount.add(subtotalPresupuesto);
+						listToDiscount.add(ancillariesDiscount);
+						listToDiscount.add(NonAncillariesDiscount);
+						mapToUpdate.put(budgets.get(discountExec[0]).Id, listToDiscount);
+						System.debug(String.valueof(listToDiscount));
+						//budgetToUpdateElement.Ancillaries_usado_Q1__c = ancillariesDiscount;
+					}
+					else if(discountExec[2] == 'NON-ANC'){
+						if(budgets.get(discountExec[0]).Ancillaries_usado_Q4__c == null){
+							budgets.get(discountExec[0]).Ancillaries_usado_Q4__c = 0;
+						}
+						if(budgets.get(discountExec[0]).Non_Ancillaries_usado_Q4__c == null){
+							budgets.get(discountExec[0]).Non_Ancillaries_usado_Q4__c = 0;
+						}
+						ancillariesDiscount = budgets.get(discountExec[0]).Ancillaries_usado_Q4__c;
+						NonAncillariesDiscount = budgets.get(discountExec[0]).Non_Ancillaries_usado_Q4__c + double.valueOf(discountExec[1]);
+						listToDiscount.add(subtotalPresupuesto);
+						listToDiscount.add(ancillariesDiscount);
+						listToDiscount.add(NonAncillariesDiscount);
+						mapToUpdate.put(budgets.get(discountExec[0]).Id, listToDiscount);
+						//budgetToUpdateElement.Non_Ancillaries_usado_Q1__c = ancillariesDiscount;
+					}
+					else{
+						System.debug('No hay ancillaries a modificar');
+					}
+				}
+				
+				}//Else break
+			}
+    	}
+		return mapToUpdate;
+    }
+
+    public static List<List<String>> discountToUpdateCorporates(Map<Id, Case> newMap, Map<Id,Case> oldMap, List<Account> corporates, Map<Id,Amount_Budget__c> budgets) {
+    	List<List<String>> discountToCorp = new List<List<String>>();
+		List<String> budgetsWaiversPremiumApproved = new List<string>();
+		List<List<String>> budgetsWaiversPremiumCancelled = new List<List<string>>();
+		List<List<String>> budgetsWaiversPremiumRecalculate = new List<List<string>>();
+
+    	for (Id idMap : newMap.keySet()) {
+    		if (newMap.get(idMap).Tipogss__c == 'Waivers Premium' && newMap.get(idMap).Status == 'Confirmado' && newMap.get(idMap).Recalculate__c == false){
+    			if (newMap.get(idMap).se_cobra__c != null) {
+					Decimal montoWaiver = newMap.get(idMap).Monto_Waiver__c;
+
+					if(montoWaiver == null )
+						montoWaiver = 0.00;
+
+					for(Account a: corporates){
+						if(newMap.get(idMap).se_cobra__c == a.Id){  // find the account related to the case
+							if (a.Id_Presupuesto__c != null){
+
+								if (budgets.get(a.Id_Presupuesto__c).CurrencyIsoCode != newMap.get(idMap).CurrencyIsoCode) {
+                                    	newMap.get(idMap).addError('La divisa del caso debe ser igual a la divisa del presupuesto');
+                                }
+								discountToCorp.add(new List<String>{a.Id_Presupuesto__c, String.valueOf(montoWaiver), newMap.get(idMap).Categoria__c}); // bulk the list for  discount corporates
+								budgetsWaiversPremiumApproved.add(a.Id_Presupuesto__c);
+								String id_presupuesto = a.Id_Presupuesto__c;
+							}else {
+								newMap.get(idMap).addError('No hay ningún presupuesto activo para esta cuenta');
+							}
+						}
+					}
+    			}
+    		}
+    		
+    		if(newMap.get(idMap).Tipogss__c == 'Waivers Premium' && newMap.get(idMap).Status == 'Cancelado' && oldMap.get(idMap).Status == 'Confirmado'){
+                System.debug('Entrando a cancelado agency');
+    			if (newMap.get(idMap).se_cobra__c != null){
+					for(Account a: corporates){
+						if(newMap.get(idMap).se_cobra__c == a.Id){  // find the account related to the case
+							if (a.Id_Presupuesto__c != null) {
+								String id_presupuesto = a.Id_Presupuesto__c;
+								budgetsWaiversPremiumCancelled.add(new List<String>{a.Id_Presupuesto__c, newMap.get(idMap).Categoria__c});
+							}else {
+								newMap.get(idMap).addError('No hay ningún presupuesto activo para esta cuenta');
+							}
+						}
+					}
+    			}	
+    		}
+
+    		if (newMap.get(idMap).Tipogss__c == 'Waivers Premium' && newMap.get(idMap).Status == 'Confirmado' && newMap.get(idMap).Recalculate__c == true) {
+    			if (newMap.get(idMap).se_cobra__c != null) {
+					Decimal montoWaiver = 0 - newMap.get(idMap).Monto_Waiver__c; //Pass the old mont in negative for substract the amount to the budget
+
+					if(montoWaiver == null )
+						montoWaiver = 0.00;
+
+					for(Account a: corporates){
+						if(newMap.get(idMap).se_cobra__c == a.Id){  // find the account related to the case
+							if (a.Id_Presupuesto__c != null) {
+								String id_presupuesto = a.Id_Presupuesto__c;
+								budgetsWaiversPremiumRecalculate.add(new List<String>{a.Id_Presupuesto__c, newMap.get(idMap).Categoria__c});
+							}else {
+								newMap.get(idMap).addError('No hay ningún presupuesto activo para esta cuenta');
+							}
+						}
+					}
+    			}
+    		}
+    	}	
+
+		//Propuesta de solución.
+		// Esta sección del código 
+		if(budgetsWaiversPremiumApproved.size() > 0){
+			List<Amount_Budget__c> budgetsPremiumApprovedList = [SELECT Id, Name, ActivoQ1__c, ActivoQ2__c, ActivoQ3__c, ActivoQ4__c FROM Amount_Budget__c WHERE Id IN: budgetsWaiversPremiumApproved];
+			System.debug(String.valueOf(budgetsPremiumApprovedList));
+			for(Amount_Budget__c abAux : budgetsPremiumApprovedList){
+				for(Id idMapForErrors : newMap.keySet()){
+						if(abAux.Id == newMap.get(idMapForErrors).Id){
+							if (abAux.ActivoQ1__c == false && abAux.ActivoQ2__c == false && abAux.ActivoQ3__c == false && abAux.ActivoQ4__c == false){
+								newMap.get(idMapForErrors).addError('No hay ningún presupuesto de trimestre activo');
+							}
+							System.debug('Prueba de comparación');
+						}else{
+							System.debug('Error');
+						}
+				}
+			}
+		}
+		else if(budgetsWaiversPremiumCancelled.size() > 0){
+			List<Amount_Budget__c> budgetsPremiumCancelledList = [SELECT Id, Name, ActivoQ1__c, ActivoQ2__c, ActivoQ3__c, ActivoQ4__c FROM Amount_Budget__c WHERE Id IN: budgetsWaiversPremiumCancelled[0]];
+			for(Amount_Budget__c abAux : budgetsPremiumCancelledList){
+				for(Id budgetsRecalculate: newMap.keySet()){
+						Decimal montoWaiver = 0 - newMap.get(budgetsRecalculate).Monto_Waiver__c; //Pass the old mont in negative for substract the amount to the budget
+						if(montoWaiver == null ){
+						montoWaiver = 0.00;
+						}
+						if (abAux.ActivoQ1__c == false && abAux.ActivoQ2__c == false && abAux.ActivoQ3__c == false && abAux.ActivoQ4__c == false){ // for validate that there are at least one trimestral amount active
+							newMap.get(budgetsRecalculate).addError('No hay ningún presupuesto de trimestre activo');
+						}else{
+							for(List<String> auxAccount : budgetsWaiversPremiumCancelled){
+								if(auxAccount[0] == abAux.Id){
+									discountToCorp.add(new List<String>{auxAccount[0], String.valueOf(montoWaiver), auxAccount[1]}); // bulk the list for  discount corporates
+								}
+							}	
+						}						
+				}
+			}
+		}
+		else if(budgetsWaiversPremiumRecalculate.size() > 0){
+			List<Amount_Budget__c> budgetsRecalculateList = [SELECT Id, Name, ActivoQ1__c, ActivoQ2__c, ActivoQ3__c, ActivoQ4__c FROM Amount_Budget__c WHERE Id IN : budgetsWaiversPremiumRecalculate[0]];
+			for(Amount_Budget__c abAux : budgetsRecalculateList){
+				for(Id budgetsRecalculate: newMap.keySet()){
+						Decimal montoWaiver = 0 - newMap.get(budgetsRecalculate).Monto_Waiver__c; //Pass the old mont in negative for substract the amount to the budget
+						if(montoWaiver == null ){
+						montoWaiver = 0.00;
+						}
+						if (abAux.ActivoQ1__c == false && abAux.ActivoQ2__c == false && abAux.ActivoQ3__c == false && abAux.ActivoQ4__c == false){ // for validate that there are at least one trimestral amount active
+							newMap.get(budgetsRecalculate).addError('No hay ningún presupuesto de trimestre activo');
+						}else{
+							for(List<String> auxAccount : budgetsWaiversPremiumRecalculate){
+								if(auxAccount[0] == abAux.Id){
+									discountToCorp.add(new List<String>{auxAccount[0], String.valueOf(montoWaiver) , auxAccount[1]}); // bulk the list for  discount corporates
+								}
+							}	
+						}						
+				}
+			}
+		}
+
+
+
+    	return discountToCorp;
+   	}
+
+    public static List<List<String>> discountToUpdateExecutives(Map<Id, Case> newMap, Map<Id,Case> oldMap, List<User> executives, Map<Id,Amount_Budget__c> budgets) {
+    	List<List<String>> discountToExec = new List<List<String>>();
+		List<String> userWaiversPremium = new List<String>();
+		List<List<String>> userWaiversPremiumC = new List<List<String>>();
+		List<List<String>> userWaiversPremiumR = new List<List<String>>();
+
+    	for (Id idMap : newMap.keySet()) {
+    		if (newMap.get(idMap).Tipogss__c == 'Waivers Premium' && newMap.get(idMap).Status == 'Confirmado' && newMap.get(idMap).Recalculate__c == false){
+    			if (newMap.get(idMap).Usuario__c != null) {
+					Decimal montoWaiver = newMap.get(idMap).Monto_Waiver__c;
+					if(montoWaiver == null )
+						montoWaiver = 0.00;
+					for(User u: executives){
+						if(newMap.get(idMap).Usuario__c == u.Id){  // find the user related to the case
+							if (u.Id_Presupuesto__c != null) {
+
+								if (budgets.get(u.Id_Presupuesto__c).CurrencyIsoCode != newMap.get(idMap).CurrencyIsoCode) {
+                                		newMap.get(idMap).addError('La divisa del caso debe ser igual a la divisa del presupuesto');
+                            	}
+
+								discountToExec.add(new List<String>{u.Id_Presupuesto__c, String.valueOf(montoWaiver), newMap.get(idMap).Categoria__c}); // bulk the list for  discount executives
+								userWaiversPremium.add(u.Id_Presupuesto__c);
+							}else {
+								newMap.get(idMap).addError('No hay ningún presupuesto activo para este usuario');
+							}
+						}
+					}
+    			}
+    		}
+	    	
+    		if (newMap.get(idMap).Tipogss__c == 'Waivers Premium' && newMap.get(idMap).Status == 'Cancelado' && oldMap.get(idMap).Status == 'Confirmado'){
+    			if (newMap.get(idMap).Usuario__c != null) {
+					Decimal montoWaiver = 0 - newMap.get(idMap).Monto_Waiver__c; //Pass the old mont in negative for substract the amount to the budget
+					if(montoWaiver == null){
+						montoWaiver = 0.00;
+					}	
+					for(User u: executives){
+						if(newMap.get(idMap).Usuario__c == u.Id){  // find the executive related to the case
+							if (u.Id_Presupuesto__c != null){
+								String id_presupuesto = u.Id_Presupuesto__c;
+								userWaiversPremiumC.add(new List<String>{u.Id_Presupuesto__c, newMap.get(idMap).Categoria__c});
+
+							}else {
+								newMap.get(idMap).addError('No hay ningún presupuesto activo para esta cuenta');
+							}
+						}
+					}
+    			}
+    		}
+
+    		if (newMap.get(idMap).Tipogss__c == 'Waivers Premium' && newMap.get(idMap).Status == 'Confirmado' && newMap.get(idMap).Recalculate__c == true){
+    			if (newMap.get(idMap).Usuario__c != null) {
+					Decimal montoWaiver = 0 - newMap.get(idMap).Monto_Waiver__c; //Pass the old mont in negative for substract the amount to the budget
+
+					if(montoWaiver == null )
+						montoWaiver = 0.00;
+
+					for(User u: executives){
+						if(newMap.get(idMap).Usuario__c == u.Id){  // find the executive related to the case
+							if (u.Id_Presupuesto__c != null) {
+								String id_presupuesto = u.Id_Presupuesto__c;
+								userWaiversPremiumR.add(new List<String>{u.Id_Presupuesto__c, newMap.get(idMap).Categoria__c});
+							}else {
+								newMap.get(idMap).addError('No hay ningún presupuesto activo para esta cuenta');
+							}
+						}
+					}
+    			}
+    		}
+			
+    	}
+		if(userWaiversPremium.size() > 0){
+			List<Amount_Budget__c> userWaiversPremiumList = [SELECT Id, Name, ActivoQ1__c, ActivoQ2__c, ActivoQ3__c, ActivoQ4__c FROM Amount_Budget__c WHERE Id IN : userWaiversPremium];
+			 for(Amount_Budget__c abAux: userWaiversPremiumList){
+				for(Id mapAux : newMap.keySet()){
+						if (abAux.ActivoQ1__c == false && abAux.ActivoQ2__c == false && abAux.ActivoQ3__c == false && abAux.ActivoQ4__c == false){
+							newMap.get(mapAux).addError('No hay ningún presupuesto de trimestre activo');
+						}
+				}
+			 }
+		}
+		if(userWaiversPremiumC.size() > 0){
+			List<Amount_Budget__c> userWaiversPremiumApprovedList = [SELECT Id, Name, ActivoQ1__c, ActivoQ2__c, ActivoQ3__c, ActivoQ4__c FROM Amount_Budget__c WHERE Id IN: userWaiversPremiumC[0]];
+			for(Amount_Budget__c abAux : userWaiversPremiumApprovedList){
+				for(Id budgetsAuxApproved: newMap.keySet()){
+						Decimal montoWaiver = 0 - newMap.get(budgetsAuxApproved).Monto_Waiver__c; //Pass the old mont in negative for substract the amount to the budget
+						if(montoWaiver == null ){
+						montoWaiver = 0.00;
+						}
+						if (abAux.ActivoQ1__c == false && abAux.ActivoQ2__c == false && abAux.ActivoQ3__c == false && abAux.ActivoQ4__c == false){ // for validate that there are at least one trimestral amount active
+							newMap.get(budgetsAuxApproved).addError('No hay ningún presupuesto de trimestre activo');
+						}else{
+							for(List<String> auxUser : userWaiversPremiumC){
+								if(auxUser[0] == abAux.Id){
+									discountToExec.add(new List<String>{auxUser[0], String.valueOf(montoWaiver), auxUser[1]}); // bulk the list for  discount corporates
+								}
+							}	
+						}						
+				}
+			}
+		}
+
+		if(userWaiversPremiumR.size() > 0){
+			List<Amount_Budget__c> userWaiversPremiumRecalculateList = [SELECT Id, Name, ActivoQ1__c, ActivoQ2__c, ActivoQ3__c, ActivoQ4__c FROM Amount_Budget__c WHERE Id IN: userWaiversPremiumR[0]];
+			for(Amount_Budget__c abAux : userWaiversPremiumRecalculateList){
+				for(Id budgetsAuxR : newMap.keySet()){
+						Decimal montoWaiver = 0 - newMap.get(budgetsAuxR).Monto_Waiver__c; //Pass the old mont in negative for substract the amount to the budget
+						if(montoWaiver == null ){
+						montoWaiver = 0.00;
+						}
+						if (abAux.ActivoQ1__c == false && abAux.ActivoQ2__c == false && abAux.ActivoQ3__c == false && abAux.ActivoQ4__c == false){ // for validate that there are at least one trimestral amount active
+							newMap.get(budgetsAuxR).addError('No hay ningún presupuesto de trimestre activo');
+						}else{
+							for(List<String> auxUser : userWaiversPremiumR){
+								if(auxUser[0] == abAux.Id){
+									discountToExec.add(new List<String>{auxUser[0], String.valueOf(montoWaiver), auxUser[1]}); // bulk the list for  discount corporates
+								}
+							}	
+						}						
+				}
+			}
+		}
+
+    	return discountToExec;
+    } 
+	//Clases traidas desde el trigger
+	/*public static List<Case> casesToBeUpdatedList(List<Case> casesToBeUpdated){
+		List<Case> casesToBeUpdatedList = new List<Case>();
+		for(Case c: casesToBeUpdated){
+			if( c.Tipogss__c == 'Waivers Standard' || c.Tipogss__c == 'Waivers Premium' ||
+				c.Tipogss__c == 'UATP' || c.Tipogss__c == 'Autorizaciones Especiales' ){  // types that generate codigo_it__c
+				if(c.Status == 'Confirmado'){
+					switch on c.Tipogss__c {
+						when 'Waivers Premium'{
+							c.codigo_it__c = String.valueOf(c.CreatedDate.year()).right(1) + 'MXSS' + String.valueOf(c.CaseNumber).right(5) + 'C' ;
+						}
+						when 'Waivers Standard'{
+							c.codigo_it__c = String.valueOf(c.CreatedDate.year()).right(1) + 'MXRU' + String.valueOf(c.CaseNumber).right(5) + 'C' ;
+						}
+						when 'UATP'{
+							c.codigo_it__c = String.valueOf(c.CreatedDate.year()).right(1) + 'MXTP' + String.valueOf(c.CaseNumber).right(5) + 'C' ;
+						}
+						when 'Autorizaciones Especiales'{
+							c.codigo_it__c = String.valueOf(c.CreatedDate.year()).right(1) + 'MXLA' + String.valueOf(c.CaseNumber).right(5) + 'C' ;
+						}
+					}
+					casesToBeUpdatedList.add(c);
+				}
+			}
+		}
+		return casesToBeUpdatedList;
+	}*/
+
+	public static List<List<String>> discountToUpdateAgencies(Map<Id, Case> newMap, Map<Id,Case> oldMap, List<Account> agencies, Map<Id,Amount_Budget__c> budgets) {
+		List<List<String>> discountAgencies = new List<List<String>>();
+		List<List<String>> budgetsWaiversPremiumApproved = new List<List<string>>();
+		List<List<String>> budgetsWaiversPremiumCancelled = new List<List<string>>();
+		List<List<String>> budgetsWaiversPremiumRecalculate = new List<List<string>>();
+    	for (Id idMap : newMap.keySet()) {
+    		if (newMap.get(idMap).Tipogss__c == 'Waivers Premium' && newMap.get(idMap).Status == 'Confirmado' && newMap.get(idMap).Recalculate__c == false) {
+				Decimal newAmountWaiver = newMap.get(idMap).Monto_Waiver__c;
+    			for(Account a: agencies){
+					if(newMap.get(idMap).se_cobra__c == a.Id ){  // find the account related to the case 
+						if (a.Budget__c != null) {
+							if (budgets.get(a.Budget__c).CurrencyIsoCode != newMap.get(idMap).CurrencyIsoCode){
+								newMap.get(idMap).addError('La divisa del caso debe ser igual a la divisa del presupuesto');
+							}// bulk the list for  discount ancillaries
+							System.debug(String.valueOf(budgetsWaiversPremiumApproved));
+							discountAgencies.add(new List<String>{a.Budget__c, String.valueOf(newAmountWaiver), newMap.get(idMap).Categoria__c});
+							//adjustNonAnc.add(new List<String>{a.Budget__c, String.valueOf(oldAmountWaiver)});
+						}else {
+							newMap.get(idMap).addError('No hay ningún presupuesto activo para esta cuenta');
+						}
+					}
+				}
+    		}
+    		if(newMap.get(idMap).Tipogss__c == 'Waivers Premium' && newMap.get(idMap).Status == 'Cancelado' && oldMap.get(idMap).Status == 'Confirmado') {
+    			if (newMap.get(idMap).se_cobra__c != null) {
+					for(Account a: agencies){
+						if(newMap.get(idMap).se_cobra__c == a.Id){  // find the account related to the case
+							if (a.Budget__c != null) {
+								budgetsWaiversPremiumCancelled.add(new List<String>{a.Budget__c, newMap.get(idMap).Categoria__c});
+							}else {
+								newMap.get(idMap).addError('No hay ningún presupuesto activo para esta cuenta');
+							}
+						}
+					}
+    			}	
+    		}
+    		if (newMap.get(idMap).Tipogss__c == 'Waivers Premium' && newMap.get(idMap).Status == 'Confirmado' && newMap.get(idMap).Recalculate__c == true) {
+    			if (newMap.get(idMap).se_cobra__c != null) {
+					Decimal montoWaiver = 0 - newMap.get(idMap).Monto_Waiver__c; //Pass the old mont in negative for substract the amount to the budget
+					if(montoWaiver == null )
+						montoWaiver = 0.00;
+					for(Account a: agencies){
+						if(newMap.get(idMap).se_cobra__c == a.Id){  // find the account related to the case
+							if (a.Budget__c != null) {
+								budgetsWaiversPremiumRecalculate.add(new List<String>{a.Budget__c, newMap.get(idMap).Categoria__c});
+							}else {
+								newMap.get(idMap).addError('No hay ningún presupuesto activo para esta cuenta');
+							}
+						}
+					}
+    			}
+    		}
+    	}	
+		if(budgetsWaiversPremiumApproved.size() > 0){
+			List<Amount_Budget__c> budgetsPremiumApprovedList = [SELECT Id, Name, ActivoQ1__c, ActivoQ2__c, ActivoQ3__c, ActivoQ4__c FROM Amount_Budget__c WHERE Id IN: budgetsWaiversPremiumApproved[0]];
+			System.debug(String.valueOf(budgetsPremiumApprovedList));
+			for(Amount_Budget__c abAux : budgetsPremiumApprovedList){
+				for(Id idMapForErrors : newMap.keySet()){
+					System.debug(String.valueOf(newMap.get(idMapForErrors).Id));
+						if (abAux.ActivoQ1__c == false && abAux.ActivoQ2__c == false && abAux.ActivoQ3__c == false && abAux.ActivoQ4__c == false){
+							newMap.get(idMapForErrors).addError('No hay ningún presupuesto de trimestre activo');
+						}
+				}
+			}
+		}
+		if(budgetsWaiversPremiumCancelled.size() > 0){
+			List<Amount_Budget__c> budgetsPremiumCancelledList = [SELECT Id, Name, ActivoQ1__c, ActivoQ2__c, ActivoQ3__c, ActivoQ4__c FROM Amount_Budget__c WHERE Id IN: budgetsWaiversPremiumCancelled[0]];
+			for(Amount_Budget__c abAux : budgetsPremiumCancelledList){
+				for(Id budgetsRecalculate: newMap.keySet()){
+						Decimal montoWaiver = 0 - newMap.get(budgetsRecalculate).Monto_Waiver__c; //Pass the old mont in negative for substract the amount to the budget
+						if(montoWaiver == null ){
+						montoWaiver = 0.00;
+						}
+						if (abAux.ActivoQ1__c == false && abAux.ActivoQ2__c == false && abAux.ActivoQ3__c == false && abAux.ActivoQ4__c == false){ // for validate that there are at least one trimestral amount active
+							newMap.get(budgetsRecalculate).addError('No hay ningún presupuesto de trimestre activo');
+						}else{
+							for(List<String> auxAccount : budgetsWaiversPremiumCancelled){
+								if(auxAccount[0] == abAux.Id){
+									discountAgencies.add(new List<String>{auxAccount[0], String.valueOf(montoWaiver), auxAccount[1]}); // bulk the list for  discount corporates
+								}
+							}	
+						}						
+				}
+			}
+		}
+		if(budgetsWaiversPremiumRecalculate.size() > 0){
+			List<Amount_Budget__c> budgetsRecalculateList = [SELECT Id, Name, ActivoQ1__c, ActivoQ2__c, ActivoQ3__c, ActivoQ4__c FROM Amount_Budget__c WHERE Id IN : budgetsWaiversPremiumRecalculate[0]];
+			for(Amount_Budget__c abAux : budgetsRecalculateList){
+				for(Id budgetsRecalculate: newMap.keySet()){
+						Decimal montoWaiver = 0 - newMap.get(budgetsRecalculate).Monto_Waiver__c; //Pass the old mont in negative for substract the amount to the budget
+						if(montoWaiver == null ){
+						montoWaiver = 0.00;
+						}
+						if (abAux.ActivoQ1__c == false && abAux.ActivoQ2__c == false && abAux.ActivoQ3__c == false && abAux.ActivoQ4__c == false){ // for validate that there are at least one trimestral amount active
+							newMap.get(budgetsRecalculate).addError('No hay ningún presupuesto de trimestre activo');
+						}else{
+							for(List<String> auxAccount : budgetsWaiversPremiumRecalculate){
+								if(auxAccount[0] == abAux.Id){
+									discountAgencies.add(new List<String>{auxAccount[0], String.valueOf(montoWaiver) , auxAccount[1]}); // bulk the list for  discount corporates
+								}
+							}	
+						}						
+				}
+			}
+		}
+
+    	return discountAgencies;
+	}
+
+	public static Map<Id, List<Decimal>> agenciesBudgetsToUpdateMap(List<list<String>> discountToAgencies, Map<Id,Amount_Budget__c> budgets){
+		List<Amount_Budget__c> amountAgenciesList = new List<Amount_Budget__c>();
+		List<Decimal> listToDiscount = new List<Decimal>();
+		Map<Id,List<Decimal>> mapToUpdate = new Map<Id, List<Decimal>>(); 
+		for(List<String> discountAgencies : discountToAgencies){
+			Amount_Budget__c budgetToUpdateElement = new Amount_Budget__c();
+			Decimal subtotalPresupuesto = 0;
+			Decimal ancillariesDiscount = 0;
+			Decimal NonAncillariesDiscount = 0;
+			if (discountAgencies[0] == budgets.get(discountAgencies[0]).Id) {
+				//Presupuesto Q1
+				if(mapToUpdate.containsKey(discountAgencies[0])){
+					subtotalPresupuesto = mapToUpdate.get(discountAgencies[0])[0] + double.valueOf(discountAgencies[1]);
+					if(discountAgencies[2] == 'ANC'){
+						ancillariesDiscount = mapToUpdate.get(discountAgencies[0])[1] + double.valueOf(discountAgencies[1]);
+						NonAncillariesDiscount = mapToUpdate.get(discountAgencies[0])[2];
+						listToDiscount.add(subtotalPresupuesto);
+						listToDiscount.add(ancillariesDiscount);
+						listToDiscount.add(NonAncillariesDiscount);
+						mapToUpdate.put(budgets.get(discountAgencies[0]).Id, listToDiscount);
+					}else if(discountAgencies[2] == 'NON-ANC'){
+						ancillariesDiscount = mapToUpdate.get(discountAgencies[0])[1];
+						NonAncillariesDiscount = mapToUpdate.get(discountAgencies[0])[2] + double.valueOf(discountAgencies[1]);
+						listToDiscount.add(subtotalPresupuesto);
+						listToDiscount.add(ancillariesDiscount);
+						listToDiscount.add(NonAncillariesDiscount);
+						mapToUpdate.put(budgets.get(discountAgencies[0]).Id, listToDiscount);
+					}
+				}else{
+				if(budgets.get(discountAgencies[0]).ActivoQ1__c == true){
+					System.debug('Entrando al Activo Q1');
+					if(budgets.get(discountAgencies[0]).Presupuesto_UsadoQ1__c == null){
+						budgets.get(discountAgencies[0]).Presupuesto_UsadoQ1__c = 0.00;
+						}
+						subtotalPresupuesto = budgets.get(discountAgencies[0]).Presupuesto_UsadoQ1__c + double.valueOf(discountAgencies[1]); //Increment the non ancillaries used budget
+						//budgetToUpdateElement.Id = budgets.get(discountAgencies[0]).Id;
+					if(discountAgencies[2] == 'ANC'){
+						if(budgets.get(discountAgencies[0]).Ancillaries_usado_Q1__c == null){
+							budgets.get(discountAgencies[0]).Ancillaries_usado_Q1__c = 0;
+						}
+						if(budgets.get(discountAgencies[0]).Non_Ancillaries_usado_Q1__c == null){
+							budgets.get(discountAgencies[0]).Non_Ancillaries_usado_Q1__c = 0;
+						}
+						ancillariesDiscount = budgets.get(discountAgencies[0]).Ancillaries_usado_Q1__c + double.valueOf(discountAgencies[1]);
+						NonAncillariesDiscount = budgets.get(discountAgencies[0]).Non_Ancillaries_usado_Q1__c;
+						listToDiscount.add(subtotalPresupuesto);
+						listToDiscount.add(ancillariesDiscount);
+						listToDiscount.add(NonAncillariesDiscount);
+						mapToUpdate.put(budgets.get(discountAgencies[0]).Id, listToDiscount);
+						System.debug(mapToUpdate);
+						//budgetToUpdateElement.Ancillaries_usado_Q1__c = ancillariesDiscount;
+					}
+					else if(discountAgencies[2] == 'NON-ANC'){
+						if(budgets.get(discountAgencies[0]).Ancillaries_usado_Q1__c == null){
+							budgets.get(discountAgencies[0]).Ancillaries_usado_Q1__c = 0;
+						}
+						if(budgets.get(discountAgencies[0]).Non_Ancillaries_usado_Q1__c == null){
+							budgets.get(discountAgencies[0]).Non_Ancillaries_usado_Q1__c = 0;
+						}
+						ancillariesDiscount = budgets.get(discountAgencies[0]).Ancillaries_usado_Q1__c;
+						NonAncillariesDiscount = budgets.get(discountAgencies[0]).Non_Ancillaries_usado_Q1__c + double.valueOf(discountAgencies[1]);
+						listToDiscount.add(subtotalPresupuesto);
+						listToDiscount.add(ancillariesDiscount);
+						listToDiscount.add(NonAncillariesDiscount);
+						mapToUpdate.put(budgets.get(discountAgencies[0]).Id, listToDiscount);
+					}
+					else{
+						System.debug('No hay ancillaries a modificar');
+					}	
+					
+				}
+				//presupuesto Q2
+				else if(budgets.get(discountAgencies[0]).ActivoQ2__c == true){
+					if(budgets.get(discountAgencies[0]).Presupuesto_UsadoQ2__c == null){
+						budgets.get(discountAgencies[0]).Presupuesto_UsadoQ2__c = 0.00;
+						}
+						subtotalPresupuesto = budgets.get(discountAgencies[0]).Presupuesto_UsadoQ2__c + double.valueOf(discountAgencies[1]); //Increment the non ancillaries used budget
+						//budgetToUpdateElement.Id = budgets.get(discountAgencies[0]).Id;
+					if(discountAgencies[2] == 'ANC'){
+						if(budgets.get(discountAgencies[0]).Ancillaries_usado_Q2__c == null){
+							budgets.get(discountAgencies[0]).Ancillaries_usado_Q2__c = 0;
+						}
+						if(budgets.get(discountAgencies[0]).Non_Ancillaries_usado_Q2__c == null){
+							budgets.get(discountAgencies[0]).Non_Ancillaries_usado_Q2__c = 0;
+						}
+						ancillariesDiscount = budgets.get(discountAgencies[0]).Ancillaries_usado_Q2__c + double.valueOf(discountAgencies[1]);
+						NonAncillariesDiscount = budgets.get(discountAgencies[0]).Non_Ancillaries_usado_Q2__c;
+						listToDiscount.add(subtotalPresupuesto);
+						listToDiscount.add(ancillariesDiscount);
+						listToDiscount.add(NonAncillariesDiscount);
+						mapToUpdate.put(budgets.get(discountAgencies[0]).Id, listToDiscount);
+						//budgetToUpdateElement.Ancillaries_usado_Q1__c = ancillariesDiscount;
+					}
+					else if(discountAgencies[2] == 'NON-ANC'){
+						if(budgets.get(discountAgencies[0]).Ancillaries_usado_Q2__c == null){
+							budgets.get(discountAgencies[0]).Ancillaries_usado_Q2__c = 0;
+						}
+						if(budgets.get(discountAgencies[0]).Non_Ancillaries_usado_Q2__c == null){
+							budgets.get(discountAgencies[0]).Non_Ancillaries_usado_Q2__c = 0;
+						}
+						ancillariesDiscount = budgets.get(discountAgencies[0]).Ancillaries_usado_Q2__c;
+						NonAncillariesDiscount = budgets.get(discountAgencies[0]).Non_Ancillaries_usado_Q2__c + double.valueOf(discountAgencies[1]);
+						listToDiscount.add(subtotalPresupuesto);
+						listToDiscount.add(ancillariesDiscount);
+						listToDiscount.add(NonAncillariesDiscount);
+						mapToUpdate.put(budgets.get(discountAgencies[0]).Id, listToDiscount);
+					}
+					else{
+						System.debug('No hay ancillaries a modificar');
+					}	
+				}	
+				//presupuesto Q3
+				else if(budgets.get(discountAgencies[0]).ActivoQ3__c == true){
+					if(budgets.get(discountAgencies[0]).Presupuesto_UsadoQ3__c == null){
+						budgets.get(discountAgencies[0]).Presupuesto_UsadoQ3__c = 0.00;
+						}
+						subtotalPresupuesto = budgets.get(discountAgencies[0]).Presupuesto_UsadoQ3__c + double.valueOf(discountAgencies[1]); //Increment the non ancillaries used budget
+					if(discountAgencies[2] == 'ANC'){
+						if(budgets.get(discountAgencies[0]).Ancillaries_usado_Q3__c == null){
+							budgets.get(discountAgencies[0]).Ancillaries_usado_Q3__c = 0;
+						}
+						if(budgets.get(discountAgencies[0]).Non_Ancillaries_usado_Q3__c == null){
+							budgets.get(discountAgencies[0]).Non_Ancillaries_usado_Q3__c = 0;
+						}
+						ancillariesDiscount = budgets.get(discountAgencies[0]).Ancillaries_usado_Q3__c + double.valueOf(discountAgencies[1]);
+						NonAncillariesDiscount = budgets.get(discountAgencies[0]).Non_Ancillaries_usado_Q3__c;
+						listToDiscount.add(subtotalPresupuesto);
+						listToDiscount.add(ancillariesDiscount);
+						listToDiscount.add(NonAncillariesDiscount);
+						mapToUpdate.put(budgets.get(discountAgencies[0]).Id, listToDiscount);
+						//budgetToUpdateElement.Ancillaries_usado_Q1__c = ancillariesDiscount;
+					}
+					else if(discountAgencies[2] == 'NON-ANC'){
+						if(budgets.get(discountAgencies[0]).Ancillaries_usado_Q3__c == null){
+							budgets.get(discountAgencies[0]).Ancillaries_usado_Q3__c = 0;
+						}
+						if(budgets.get(discountAgencies[0]).Non_Ancillaries_usado_Q3__c == null){
+							budgets.get(discountAgencies[0]).Non_Ancillaries_usado_Q3__c = 0;
+						}
+						ancillariesDiscount = budgets.get(discountAgencies[0]).Ancillaries_usado_Q3__c;
+						NonAncillariesDiscount = budgets.get(discountAgencies[0]).Non_Ancillaries_usado_Q3__c + double.valueOf(discountAgencies[1]);
+						listToDiscount.add(subtotalPresupuesto);
+						listToDiscount.add(ancillariesDiscount);
+						listToDiscount.add(NonAncillariesDiscount);
+						mapToUpdate.put(budgets.get(discountAgencies[0]).Id, listToDiscount);
+						//budgetToUpdateElement.Non_Ancillaries_usado_Q1__c = ancillariesDiscount;
+					}
+					else{
+						System.debug('No hay ancillaries a modificar');
+					}	
+				}
+				//PresupuestoQ4
+				else if(budgets.get(discountAgencies[0]).ActivoQ4__c == true){
+					if(budgets.get(discountAgencies[0]).Presupuesto_UsadoQ4__c == null){
+						budgets.get(discountAgencies[0]).Presupuesto_UsadoQ4__c = 0.00;
+						}
+						subtotalPresupuesto = budgets.get(discountAgencies[0]).Presupuesto_UsadoQ4__c + double.valueOf(discountAgencies[1]); //Increment the non ancillaries used budget
+						//budgetToUpdateElement.Id = budgets.get(discountAgencies[0]).Id;
+					if(discountAgencies[2] == 'ANC'){
+						if(budgets.get(discountAgencies[0]).Ancillaries_usado_Q4__c == null){
+							budgets.get(discountAgencies[0]).Ancillaries_usado_Q4__c = 0;
+						}
+						if(budgets.get(discountAgencies[0]).Non_Ancillaries_usado_Q4__c == null){
+							budgets.get(discountAgencies[0]).Non_Ancillaries_usado_Q4__c = 0;
+						}
+						ancillariesDiscount = budgets.get(discountAgencies[0]).Ancillaries_usado_Q4__c + double.valueOf(discountAgencies[1]);
+						NonAncillariesDiscount = budgets.get(discountAgencies[0]).Non_Ancillaries_usado_Q4__c;
+						listToDiscount.add(subtotalPresupuesto);
+						listToDiscount.add(ancillariesDiscount);
+						listToDiscount.add(NonAncillariesDiscount);
+						mapToUpdate.put(budgets.get(discountAgencies[0]).Id, listToDiscount);
+						//budgetToUpdateElement.Ancillaries_usado_Q1__c = ancillariesDiscount;
+					}
+					else if(discountAgencies[2] == 'NON-ANC'){
+						if(budgets.get(discountAgencies[0]).Ancillaries_usado_Q4__c == null){
+							budgets.get(discountAgencies[0]).Ancillaries_usado_Q4__c = 0;
+						}
+						if(budgets.get(discountAgencies[0]).Non_Ancillaries_usado_Q4__c == null){
+							budgets.get(discountAgencies[0]).Non_Ancillaries_usado_Q4__c = 0;
+						}
+						ancillariesDiscount = budgets.get(discountAgencies[0]).Ancillaries_usado_Q4__c;
+						NonAncillariesDiscount = budgets.get(discountAgencies[0]).Non_Ancillaries_usado_Q4__c + double.valueOf(discountAgencies[1]);
+						listToDiscount.add(subtotalPresupuesto);
+						listToDiscount.add(ancillariesDiscount);
+						listToDiscount.add(NonAncillariesDiscount);
+						mapToUpdate.put(budgets.get(discountAgencies[0]).Id, listToDiscount);
+						//budgetToUpdateElement.Non_Ancillaries_usado_Q1__c = ancillariesDiscount;
+					}
+					else{
+						System.debug('No hay ancillaries a modificar');
+					}	
+				}
+			}
+			}
+    	}
+		return mapToUpdate;
+	}
+	
+}
