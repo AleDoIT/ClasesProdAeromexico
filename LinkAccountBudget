@@ -1,0 +1,1095 @@
+/**
+ *  @Name           LinkAccountBudget
+ *  @Copyright      DoIT Cloud Consulting
+ *  @Author         Geovany Ruiz <geovany@doitcloud.consulting>
+ *  @Description	Helper class that contains logical process for trigger  'Trigger_Link AccountBudget'
+**/
+
+public class LinkAccountBudget {    
+
+	public static List<Account> putBudgets(List<Amount_Budget__c> budgets){
+
+		Set<String> gssIds = new Set<String>();
+
+		for (Amount_Budget__c b: budgets) {
+			gssIds.add(b.Gss_Id__c);
+		}
+
+		List<Account> accounts = [SELECT Id, Name, Gss_Id_edit__c, Budget__c, RecordType.Name FROM Account WHERE RecordType.Name = 'N2 Agency (IATA Branch)' AND Gss_Id_edit__c IN: gssIds];
+
+		List<Account> accountsToUpdate = new List<Account>();
+		Id corporatesRT = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Corporativos').getRecordTypeId();
+		Id executivesRT = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Ejecutivos').getRecordTypeId();
+
+		for (Amount_Budget__c amb : budgets) { // Iterate the budgets that are inserting
+			if (amb.Activo__c == true && amb.RecordTypeId != corporatesRT && amb.RecordTypeId != executivesRT) {   
+				for (Account acc : accounts) {
+					if (amb.Gss_Id__c == acc.Gss_Id_edit__c) { // Search accounts that have the same Gss Id
+						if (acc.Budget__c != null) {
+							amb.addError('Hay presupuestos activos con el mismo GSS Id');
+						}else {
+							acc.Budget__c = amb.Id; // If the budget's field on account is empty, the inserting budget is allocated
+							accountsToUpdate.add(acc);
+						}	
+					} 
+				}
+			}  
+		}
+
+		return accountsToUpdate; 
+	}
+
+	public static List<Account> putAndRemoveBudget(Map<Id,Amount_Budget__c> newMap, Map<Id,Amount_Budget__c> oldMap, set<String> agenciesIds){
+		Set<String> gssIds = new Set<String>();
+		for (Id b: newMap.keySet()) {
+			gssIds.add(newMap.get(b).Gss_Id__c);
+		}
+        System.debug(String.valueOf(gssIds));
+    
+		List<Account> accountsToUpdate = new List<Account>();
+		List<Account> accounts = [SELECT Id, Name, Gss_Id_edit__c, Budget__c, RecordType.Name, Monto_Currency_Q1__c, Monto_Currency_Q2__c, Monto_Currency_Q3__c,Monto_Currency_Q4__c,
+		Ancilaries_Q1__c, Ancilaries_Q2__c, Ancilaries_Q3__c, Ancilaries_Q4__c,Ancilaries_Disponible_Q1__c,Ancilaries_Disponible_Q2__c,Ancilaries_Disponible_Q3__c,Ancilaries_Disponible_Q4__c,
+		Ancilaries_Usado_Q1__c,Ancilaries_Usado_Q2__c,Ancilaries_Usado_Q3__c,Ancilaries_Usado_Q4__c, Non_Ancilaries_Disponible_Q1__c,Non_Ancilaries_Disponible_Q2__c,Non_Ancilaries_Disponible_Q3__c,Non_Ancilaries_Disponible_Q4__c,
+		Non_Ancilaries_Q1__c,Non_Ancilaries_Q2__c,Non_Ancilaries_Q3__c,Non_Ancilaries_Q4__c, Non_Ancilaries_Usado_Q1__c,Non_Ancilaries_Usado_Q2__c,Non_Ancilaries_Usado_Q3__c,Non_Ancilaries_Usado_Q4__c,
+		Monto_Disponible_Q1__c,Monto_Disponible_Q2__c,Monto_Disponible_Q3__c,Monto_Disponible_Q4__c,Monto_Usado_Q1__c,Monto_Usado_Q2__c,Monto_Usado_Q3__c,Monto_Usado_Q4__c
+		FROM Account WHERE RecordType.Name = 'N2 Agency (IATA Branch)' AND Gss_Id_edit__c IN: agenciesIds];
+		
+        System.debug('Consulta de Agencies' + String.valueOf(accounts));
+        
+		Id corporatesRT = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Corporativos').getRecordTypeId();
+		Id executivesRT = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Ejecutivos').getRecordTypeId();
+
+		for (Id ambId : newMap.keySet()) { // Iterate the Id budgets that are inserting
+			if (newMap.get(ambId).Activo__c != oldMap.get(ambId).Activo__c ) { // only if the old values are different to the new values
+				if (newMap.get(ambId).Activo__c == false && newMap.get(ambId).RecordTypeId != corporatesRT && newMap.get(ambId).RecordTypeId != executivesRT) {
+					for (Account acc: accounts) {
+						if (ambId == acc.Budget__c) {
+							acc.Budget__c = null;  // If the budget exist on some account, clean the budget's field on account
+							acc.Presupuesto_disponible__c = null;
+							acc.Monto_Currency_Q1__c = null;
+							acc.Monto_Currency_Q2__c = null;
+							acc.Monto_Currency_Q3__c = null;
+							acc.Monto_Currency_Q4__c = null;
+							acc.Monto_Usado_Q1__c = null;
+							acc.Monto_Usado_Q2__c = null;
+							acc.Monto_Usado_Q3__c = null;
+							acc.Monto_Usado_Q4__c = null;
+							acc.Monto_Disponible_Q1__c = null;
+							acc.Monto_Disponible_Q2__c = null;
+							acc.Monto_Disponible_Q3__c = null;
+							acc.Monto_Disponible_Q4__c = null;
+							acc.Ancilaries_Disponible_Q1__c = null;
+							acc.Ancilaries_Disponible_Q2__c = null;
+							acc.Ancilaries_Disponible_Q3__c = null;
+							acc.Ancilaries_Disponible_Q4__c = null;
+							acc.Ancilaries_Q1__c = null;
+							acc.Ancilaries_Q2__c = null;
+							acc.Ancilaries_Q3__c = null;
+							acc.Ancilaries_Q4__c = null;
+							acc.Ancilaries_Usado_Q1__c = null;
+							acc.Ancilaries_Usado_Q2__c = null;
+							acc.Ancilaries_Usado_Q3__c = null;
+							acc.Ancilaries_Usado_Q4__c = null;
+							acc.Non_Ancilaries_Q1__c = null;
+							acc.Non_Ancilaries_Q2__c = null;
+							acc.Non_Ancilaries_Q3__c = null;
+							acc.Non_Ancilaries_Q4__c = null;
+							acc.Non_Ancilaries_Usado_Q1__c = null;
+							acc.Non_Ancilaries_Usado_Q2__c = null;
+							acc.Non_Ancilaries_Usado_Q3__c = null;
+							acc.Non_Ancilaries_Usado_Q4__c = null;
+							acc.Non_Ancilaries_Disponible_Q1__c = null;
+							acc.Non_Ancilaries_Disponible_Q2__c = null;
+							acc.Non_Ancilaries_Disponible_Q3__c = null;
+							acc.Non_Ancilaries_Disponible_Q4__c = null;
+							accountsToUpdate.add(acc);
+						}
+					}
+				}else if (newMap.get(ambId).Activo__c == true && newMap.get(ambId).RecordTypeId != corporatesRT && newMap.get(ambId).RecordTypeId != executivesRT) {
+
+					for (Account acc : accounts) {
+						if (newMap.get(ambId).Gss_Id__c == acc.Gss_Id_edit__c) { // Search accounts that have the same Gss Id
+							if (acc.Budget__c != null) {
+								newMap.get(ambId).addError('Hay presupuestos activos con el mismo GSS Id');
+							}else{
+								acc.Budget__c = ambId;  // If the budget's field on account is empty, the inserting budget is allocated
+								acc.Presupuesto_disponible__c = null;
+								acc.Monto_Currency_Q1__c = null;
+								acc.Monto_Currency_Q2__c = null;
+								acc.Monto_Currency_Q3__c = null;
+								acc.Monto_Currency_Q4__c = null;
+								acc.Monto_Usado_Q1__c = null;
+								acc.Monto_Usado_Q2__c = null;
+								acc.Monto_Usado_Q3__c = null;
+								acc.Monto_Usado_Q4__c = null;
+								acc.Monto_Disponible_Q1__c = null;
+								acc.Monto_Disponible_Q2__c = null;
+								acc.Monto_Disponible_Q3__c = null;
+								acc.Monto_Disponible_Q4__c = null;
+								acc.Ancilaries_Disponible_Q1__c = null;
+								acc.Ancilaries_Disponible_Q2__c = null;
+								acc.Ancilaries_Disponible_Q3__c = null;
+								acc.Ancilaries_Disponible_Q4__c = null;
+								acc.Ancilaries_Q1__c = null;
+								acc.Ancilaries_Q2__c = null;
+								acc.Ancilaries_Q3__c = null;
+								acc.Ancilaries_Q4__c = null;
+								acc.Ancilaries_Usado_Q1__c = null;
+								acc.Ancilaries_Usado_Q2__c = null;
+								acc.Ancilaries_Usado_Q3__c = null;
+								acc.Ancilaries_Usado_Q4__c = null;
+								acc.Non_Ancilaries_Q1__c = null;
+								acc.Non_Ancilaries_Q2__c = null;
+								acc.Non_Ancilaries_Q3__c = null;
+								acc.Non_Ancilaries_Q4__c = null;
+								acc.Non_Ancilaries_Usado_Q1__c = null;
+								acc.Non_Ancilaries_Usado_Q2__c = null;
+								acc.Non_Ancilaries_Usado_Q3__c = null;
+								acc.Non_Ancilaries_Usado_Q4__c = null;
+								acc.Non_Ancilaries_Disponible_Q1__c = null;
+								acc.Non_Ancilaries_Disponible_Q2__c = null;
+								acc.Non_Ancilaries_Disponible_Q3__c = null;
+								acc.Non_Ancilaries_Disponible_Q4__c = null;
+								accountsToUpdate.add(acc);
+							}	
+						}
+					}
+				}
+			}else if (newMap.get(ambId).Disponible_ce__c != oldMap.get(ambId).Disponible_ce__c  && newMap.get(ambId).RecordTypeId != corporatesRT && newMap.get(ambId).RecordTypeId != executivesRT && newMap.get(ambId).Activo__c == true){
+				for (Account acc: accounts){
+                    System.debug(ambId);
+                    System.debug(acc.budget__C);
+					if (ambId == acc.Budget__c){
+						acc.Presupuesto_disponible__c = newMap.get(ambId).Disponible_ce__c;
+						acc.Monto_Usado_Q1__c = newMap.get(ambId).Presupuesto_UsadoQ1__c;
+						acc.Monto_Usado_Q2__c = newMap.get(ambId).Presupuesto_UsadoQ2__c;
+						acc.Monto_Usado_Q3__c = newMap.get(ambId).Presupuesto_UsadoQ3__c;
+						acc.Monto_Usado_Q4__c = newMap.get(ambId).Presupuesto_UsadoQ4__c;
+
+						acc.Monto_Currency_Q1__c = newMap.get(ambId).Monto_Q1_Currency__c;
+						acc.Monto_Currency_Q2__c = newMap.get(ambId).Monto_Q2_Currency__c;
+						acc.Monto_Currency_Q3__c = newMap.get(ambId).Monto_Q3_Currency__c;
+						acc.Monto_Currency_Q4__c = newMap.get(ambId).Monto_Q4_Currency__c;
+
+						acc.Monto_Disponible_Q1__c = newMap.get(ambId).DisponibleQ1__c;
+						acc.Monto_Disponible_Q2__c = newMap.get(ambId).DisponibleQ2__c;
+						acc.Monto_Disponible_Q3__c = newMap.get(ambId).DisponibleQ3__c;
+						acc.Monto_Disponible_Q4__c = newMap.get(ambId).DisponibleQ4__c;
+
+						acc.Ancilaries_Q1__c = newMap.get(ambId).Monto_Ancillaries_Q1__c;
+						acc.Ancilaries_Q2__c = newMap.get(ambId).Monto_Ancillaries_Q2__c;
+						acc.Ancilaries_Q3__c = newMap.get(ambId).Monto_Ancillaries_Q3__c;
+						acc.Ancilaries_Q4__c = newMap.get(ambId).Monto_Ancillaries_Q4__c;
+
+						acc.Ancilaries_Usado_Q1__c = newMap.get(ambId).Ancillaries_usado_Q1__c;
+						acc.Ancilaries_Usado_Q2__c = newMap.get(ambId).Ancillaries_usado_Q2__c;
+						acc.Ancilaries_Usado_Q3__c = newMap.get(ambId).Ancillaries_usado_Q3__c;
+						acc.Ancilaries_Usado_Q4__c = newMap.get(ambId).Ancillaries_usado_Q4__c;
+
+						acc.Ancilaries_Disponible_Q1__c = newMap.get(ambId).Ancillaries_Disponible_Q1__c;
+						acc.Ancilaries_Disponible_Q2__c = newMap.get(ambId).Ancillaries_Disponible_Q2__c;
+						acc.Ancilaries_Disponible_Q3__c = newMap.get(ambId).Ancillaries_Disponible_Q3__c;
+						acc.Ancilaries_Disponible_Q4__c = newMap.get(ambId).Ancillaries_Disponible_Q4__c;
+
+						acc.Non_Ancilaries_Q1__c = newMap.get(ambId).Monto_No_Ancillaries_Q1__c;
+						acc.Non_Ancilaries_Q2__c = newMap.get(ambId).Monto_No_Ancillaries_Q2__c;
+						acc.Non_Ancilaries_Q3__c = newMap.get(ambId).Monto_No_Ancillaries_Q3__c;
+						acc.Non_Ancilaries_Q4__c = newMap.get(ambId).Monto_No_Ancillaries_Q4__c;
+
+						acc.Non_Ancilaries_Usado_Q1__c = newMap.get(ambId).Non_Ancillaries_usado_Q1__c;
+						acc.Non_Ancilaries_Usado_Q2__c = newMap.get(ambId).Non_Ancillaries_usado_Q2__c;
+						acc.Non_Ancilaries_Usado_Q3__c = newMap.get(ambId).Non_Ancillaries_usado_Q3__c;
+						acc.Non_Ancilaries_Usado_Q4__c = newMap.get(ambId).Non_Ancillaries_usado_Q4__c;
+
+						acc.Non_Ancilaries_Disponible_Q1__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q1__c;
+						acc.Non_Ancilaries_Disponible_Q2__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q2__c;
+						acc.Non_Ancilaries_Disponible_Q3__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q3__c;
+						acc.Non_Ancilaries_Disponible_Q4__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q4__c;
+
+						accountsToUpdate.add(acc);
+					}
+				}
+			}/*else if (newMap.get(ambId).Gss_Id__c != oldMap.get(ambId).Gss_Id__c  && newMap.get(ambId).RecordTypeId == corporatesRT && newMap.get(ambId).Activo__c == true) {
+				for (Account acc : corporates) {
+					if (newMap.get(ambId).Presupuesto_corporativo__c == acc.Id) { // Find corporates by Id
+						if (acc.Budget != null) {
+							newMap.get(ambId).addError('Hay presupuestos activos para esta Agencia');
+						}else {
+							acc.Id_Presupuesto__c = ambId;  // If the Id_Presupuesto__c field on account is empty, the inserting budget is allocated
+							acc.Presupuesto_disponible__c = newMap.get(ambId).Disponible_ce__c;
+							acc.Monto_Usado_Q1__c = newMap.get(ambId).Presupuesto_UsadoQ1__c;
+							acc.Monto_Usado_Q2__c = newMap.get(ambId).Presupuesto_UsadoQ2__c;
+							acc.Monto_Usado_Q3__c = newMap.get(ambId).Presupuesto_UsadoQ3__c;
+							acc.Monto_Usado_Q4__c = newMap.get(ambId).Presupuesto_UsadoQ4__c;
+
+							acc.Monto_Currency_Q1__c = newMap.get(ambId).Monto_Q1_Currency__c;
+							acc.Monto_Currency_Q2__c = newMap.get(ambId).Monto_Q2_Currency__c;
+							acc.Monto_Currency_Q3__c = newMap.get(ambId).Monto_Q3_Currency__c;
+							acc.Monto_Currency_Q4__c = newMap.get(ambId).Monto_Q4_Currency__c;
+
+							acc.Monto_Disponible_Q1__c = newMap.get(ambId).DisponibleQ1__c;
+							acc.Monto_Disponible_Q2__c = newMap.get(ambId).DisponibleQ2__c;
+							acc.Monto_Disponible_Q3__c = newMap.get(ambId).DisponibleQ3__c;
+							acc.Monto_Disponible_Q4__c = newMap.get(ambId).DisponibleQ4__c;
+
+							acc.Ancilaries_Q1__c = newMap.get(ambId).Monto_Ancillaries_Q1__c;
+							acc.Ancilaries_Q2__c = newMap.get(ambId).Monto_Ancillaries_Q2__c;
+							acc.Ancilaries_Q3__c = newMap.get(ambId).Monto_Ancillaries_Q3__c;
+							acc.Ancilaries_Q4__c = newMap.get(ambId).Monto_Ancillaries_Q4__c;
+
+							acc.Ancilaries_Usado_Q1__c = newMap.get(ambId).Ancillaries_usado_Q1__c;
+							acc.Ancilaries_Usado_Q2__c = newMap.get(ambId).Ancillaries_usado_Q2__c;
+							acc.Ancilaries_Usado_Q3__c = newMap.get(ambId).Ancillaries_usado_Q3__c;
+							acc.Ancilaries_Usado_Q4__c = newMap.get(ambId).Ancillaries_usado_Q4__c;
+
+							acc.Ancilaries_Disponible_Q1__c = newMap.get(ambId).Ancillaries_Disponible_Q1__c;
+							acc.Ancilaries_Disponible_Q2__c = newMap.get(ambId).Ancillaries_Disponible_Q2__c;
+							acc.Ancilaries_Disponible_Q3__c = newMap.get(ambId).Ancillaries_Disponible_Q3__c;
+							acc.Ancilaries_Disponible_Q4__c = newMap.get(ambId).Ancillaries_Disponible_Q4__c;
+
+							acc.Non_Ancilaries_Q1__c = newMap.get(ambId).Monto_No_Ancillaries_Q1__c;
+							acc.Non_Ancilaries_Q2__c = newMap.get(ambId).Monto_No_Ancillaries_Q2__c;
+							acc.Non_Ancilaries_Q3__c = newMap.get(ambId).Monto_No_Ancillaries_Q3__c;
+							acc.Non_Ancilaries_Q4__c = newMap.get(ambId).Monto_No_Ancillaries_Q4__c;
+							
+							acc.Non_Ancilaries_Usado_Q1__c = newMap.get(ambId).Non_Ancillaries_usado_Q1__c;
+							acc.Non_Ancilaries_Usado_Q2__c = newMap.get(ambId).Non_Ancillaries_usado_Q2__c;
+							acc.Non_Ancilaries_Usado_Q3__c = newMap.get(ambId).Non_Ancillaries_usado_Q3__c;
+							acc.Non_Ancilaries_Usado_Q4__c = newMap.get(ambId).Non_Ancillaries_usado_Q4__c;
+
+							acc.Non_Ancilaries_Disponible_Q1__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q1__c;
+							acc.Non_Ancilaries_Disponible_Q2__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q2__c;
+							acc.Non_Ancilaries_Disponible_Q3__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q3__c;
+							acc.Non_Ancilaries_Disponible_Q4__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q4__c;
+							accountsToUpdate.add(acc);
+						}	
+					}
+
+					if (oldMap.get(ambId).Budget__c == acc.Id) { // Find corporates by Id
+							acc.Budget__c         = null;  // If the budget exist on some corporate account, clean the Id_Presupuesto__c
+							acc.Presupuesto_disponible__c = null;
+							acc.Monto_Currency_Q1__c = null;
+							acc.Monto_Currency_Q2__c = null;
+							acc.Monto_Currency_Q3__c = null;
+							acc.Monto_Currency_Q4__c = null;
+							acc.Monto_Usado_Q1__c = null;
+							acc.Monto_Usado_Q2__c = null;
+							acc.Monto_Usado_Q3__c = null;
+							acc.Monto_Usado_Q4__c = null;
+							acc.Monto_Disponible_Q1__c = null;
+							acc.Monto_Disponible_Q2__c = null;
+							acc.Monto_Disponible_Q3__c = null;
+							acc.Monto_Disponible_Q4__c = null;
+							acc.Ancilaries_Disponible_Q1__c = null;
+							acc.Ancilaries_Disponible_Q2__c = null;
+							acc.Ancilaries_Disponible_Q3__c = null;
+							acc.Ancilaries_Disponible_Q4__c = null;
+							acc.Ancilaries_Q1__c = null;
+							acc.Ancilaries_Q2__c = null;
+							acc.Ancilaries_Q3__c = null;
+							acc.Ancilaries_Q4__c = null;
+							acc.Ancilaries_Usado_Q1__c = null;
+							acc.Ancilaries_Usado_Q2__c = null;
+							acc.Ancilaries_Usado_Q3__c = null;
+							acc.Ancilaries_Usado_Q4__c = null;
+							acc.Non_Ancilaries_Q1__c = null;
+							acc.Non_Ancilaries_Q2__c = null;
+							acc.Non_Ancilaries_Q3__c = null;
+							acc.Non_Ancilaries_Q4__c = null;
+							acc.Non_Ancilaries_Usado_Q1__c = null;
+							acc.Non_Ancilaries_Usado_Q2__c = null;
+							acc.Non_Ancilaries_Usado_Q3__c = null;
+							acc.Non_Ancilaries_Usado_Q4__c = null;
+							acc.Non_Ancilaries_Disponible_Q1__c = null;
+							acc.Non_Ancilaries_Disponible_Q2__c = null;
+							acc.Non_Ancilaries_Disponible_Q3__c = null;
+							acc.Non_Ancilaries_Disponible_Q4__c = null;
+							accountsToUpdate.add(acc);
+							accountsToUpdate.add(acc);
+					}
+				}
+			}*/	
+		}
+		return accountsToUpdate;
+	}
+
+	public static List<Account> putIdBudgets(List<Amount_Budget__c> budgets, List<Account> corporates) {
+
+		List<Account> corporatesToUpdate = new List<Account>();
+		Id corporatesRT = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Corporativos').getRecordTypeId();
+
+		for (Amount_Budget__c amb : budgets) { // Iterate the budgets that are inserting
+			if (amb.Activo__c == true && amb.RecordTypeId == corporatesRT) {   
+				for (Account acc : corporates) {
+					if (amb.Presupuesto_corporativo__c == acc.Id) { // Search related accounts 
+						if (acc.Id_Presupuesto__c != null) {
+							amb.addError('Hay presupuestos activos relacionados a este corporativo');
+						}else {
+							acc.Id_Presupuesto__c = amb.Id; // If the Id_Presupuesto__c field on account is empty, the Id inserting budget is allocated
+							acc.Presupuesto_disponible__c = amb.Disponible_ce__c;
+							acc.Monto_Usado_Q1__c =	amb.Presupuesto_UsadoQ1__c;
+							acc.Monto_Usado_Q2__c =	amb.Presupuesto_UsadoQ2__c;
+							acc.Monto_Usado_Q3__c =	amb.Presupuesto_UsadoQ3__c;
+							acc.Monto_Usado_Q4__c = amb.Presupuesto_UsadoQ4__c;
+
+							acc.Monto_Currency_Q1__c =	amb.Monto_Q1_Currency__c;
+							acc.Monto_Currency_Q2__c = 	amb.Monto_Q2_Currency__c;
+							acc.Monto_Currency_Q3__c =	amb.Monto_Q3_Currency__c;
+							acc.Monto_Currency_Q4__c = 	amb.Monto_Q4_Currency__c;
+
+							acc.Monto_Disponible_Q1__c = amb.DisponibleQ1__c;
+							acc.Monto_Disponible_Q2__c = amb.DisponibleQ2__c;
+							acc.Monto_Disponible_Q3__c = amb.DisponibleQ3__c;
+							acc.Monto_Disponible_Q4__c = amb.DisponibleQ4__c;
+
+							acc.Ancilaries_Q1__c = amb.Monto_Ancillaries_Q1__c;
+							acc.Ancilaries_Q2__c = amb.Monto_Ancillaries_Q2__c;
+							acc.Ancilaries_Q3__c = amb.Monto_Ancillaries_Q3__c;
+							acc.Ancilaries_Q4__c = amb.Monto_Ancillaries_Q4__c;
+
+							acc.Ancilaries_Usado_Q1__c = amb.Ancillaries_usado_Q1__c;
+							acc.Ancilaries_Usado_Q2__c = amb.Ancillaries_usado_Q2__c;
+							acc.Ancilaries_Usado_Q3__c = amb.Ancillaries_usado_Q3__c;
+							acc.Ancilaries_Usado_Q4__c = amb.Ancillaries_usado_Q4__c;
+
+							acc.Ancilaries_Disponible_Q1__c = amb.Ancillaries_Disponible_Q1__c;
+							acc.Ancilaries_Disponible_Q2__c = amb.Ancillaries_Disponible_Q2__c;
+							acc.Ancilaries_Disponible_Q3__c = amb.Ancillaries_Disponible_Q3__c;
+							acc.Ancilaries_Disponible_Q4__c = amb.Ancillaries_Disponible_Q4__c;
+
+							acc.Non_Ancilaries_Q1__c = amb.Monto_No_Ancillaries_Q1__c;
+							acc.Non_Ancilaries_Q2__c = amb.Monto_No_Ancillaries_Q2__c;
+							acc.Non_Ancilaries_Q3__c = amb.Monto_No_Ancillaries_Q3__c;
+							acc.Non_Ancilaries_Q4__c = amb.Monto_No_Ancillaries_Q4__c;
+
+							acc.Non_Ancilaries_Usado_Q1__c = amb.Non_Ancillaries_usado_Q1__c;
+							acc.Non_Ancilaries_Usado_Q2__c = amb.Non_Ancillaries_usado_Q2__c;
+							acc.Non_Ancilaries_Usado_Q3__c = amb.Non_Ancillaries_usado_Q3__c;
+							acc.Non_Ancilaries_Usado_Q4__c = amb.Non_Ancillaries_usado_Q4__c;
+
+							acc.Non_Ancilaries_Disponible_Q1__c = amb.Non_Ancillaries_Disponible_Q1__c;
+							acc.Non_Ancilaries_Disponible_Q2__c = amb.Non_Ancillaries_Disponible_Q2__c;
+							acc.Non_Ancilaries_Disponible_Q3__c = amb.Non_Ancillaries_Disponible_Q3__c;
+							acc.Non_Ancilaries_Disponible_Q4__c = amb.Non_Ancillaries_Disponible_Q4__c;
+							corporatesToUpdate.add(acc);
+						}	
+					}
+				}
+			} 
+		}
+
+		return corporatesToUpdate;
+	}
+
+	public static List<Account> putAndRemoveCorpBudget (Map<Id,Amount_Budget__c> newMap, Map<Id,Amount_Budget__c> oldMap, set<String> corporatesIds) {
+
+		Set<String> gssIds = new Set<String>();
+
+		for (Id b: newMap.keySet()) {
+			gssIds.add(newMap.get(b).Presupuesto_corporativo__c);
+		}
+
+		List<Account> accountsToUpdate = new List<Account>();
+		List<Account> corporates 	   = [SELECT Id, Name, RecordType.Name, Presupuesto_disponible__c, Id_Presupuesto__c, Monto_Currency_Q1__c, Monto_Currency_Q2__c, Monto_Currency_Q3__c,Monto_Currency_Q4__c,
+										Ancilaries_Q1__c, Ancilaries_Q2__c, Ancilaries_Q3__c, Ancilaries_Q4__c,Ancilaries_Disponible_Q1__c,Ancilaries_Disponible_Q2__c,Ancilaries_Disponible_Q3__c,Ancilaries_Disponible_Q4__c,
+										Ancilaries_Usado_Q1__c,Ancilaries_Usado_Q2__c,Ancilaries_Usado_Q3__c,Ancilaries_Usado_Q4__c, Non_Ancilaries_Disponible_Q1__c,Non_Ancilaries_Disponible_Q2__c,Non_Ancilaries_Disponible_Q3__c,Non_Ancilaries_Disponible_Q4__c,
+										Non_Ancilaries_Q1__c,Non_Ancilaries_Q2__c,Non_Ancilaries_Q3__c,Non_Ancilaries_Q4__c, Non_Ancilaries_Usado_Q1__c,Non_Ancilaries_Usado_Q2__c,Non_Ancilaries_Usado_Q3__c,Non_Ancilaries_Usado_Q4__c,
+										Monto_Disponible_Q1__c,Monto_Disponible_Q2__c,Monto_Disponible_Q3__c,Monto_Disponible_Q4__c,Monto_Usado_Q1__c,Monto_Usado_Q2__c,Monto_Usado_Q3__c,Monto_Usado_Q4__c
+										FROM Account WHERE RecordType.Name = 'L2 AM Corporate' AND Id IN: corporatesIds];
+        
+        System.debug('Consulta de Corporativos:' + String.valueOf(corporates));
+		
+		Id corporatesRT = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Corporativos').getRecordTypeId();
+		for (Id ambId : newMap.keySet()) { // Iterate the Id budgets that are inserting
+
+			if (newMap.get(ambId).Activo__c != oldMap.get(ambId).Activo__c) { // only if the old values are different to the new values
+				if (newMap.get(ambId).Activo__c == false && newMap.get(ambId).RecordTypeId == corporatesRT) {
+					for (Account acc: corporates) {
+						if (ambId == acc.Id_Presupuesto__c) {
+							acc.Id_Presupuesto__c         = null;  // If the budget exist on some corporate account, clean the Id_Presupuesto__c
+							acc.Presupuesto_disponible__c = null;
+							acc.Monto_Currency_Q1__c = null;
+							acc.Monto_Currency_Q2__c = null;
+							acc.Monto_Currency_Q3__c = null;
+							acc.Monto_Currency_Q4__c = null;
+							acc.Monto_Usado_Q1__c = null;
+							acc.Monto_Usado_Q2__c = null;
+							acc.Monto_Usado_Q3__c = null;
+							acc.Monto_Usado_Q4__c = null;
+							acc.Monto_Disponible_Q1__c = null;
+							acc.Monto_Disponible_Q2__c = null;
+							acc.Monto_Disponible_Q3__c = null;
+							acc.Monto_Disponible_Q4__c = null;
+							acc.Ancilaries_Disponible_Q1__c = null;
+							acc.Ancilaries_Disponible_Q2__c = null;
+							acc.Ancilaries_Disponible_Q3__c = null;
+							acc.Ancilaries_Disponible_Q4__c = null;
+							acc.Ancilaries_Q1__c = null;
+							acc.Ancilaries_Q2__c = null;
+							acc.Ancilaries_Q3__c = null;
+							acc.Ancilaries_Q4__c = null;
+							acc.Ancilaries_Usado_Q1__c = null;
+							acc.Ancilaries_Usado_Q2__c = null;
+							acc.Ancilaries_Usado_Q3__c = null;
+							acc.Ancilaries_Usado_Q4__c = null;
+							acc.Non_Ancilaries_Q1__c = null;
+							acc.Non_Ancilaries_Q2__c = null;
+							acc.Non_Ancilaries_Q3__c = null;
+							acc.Non_Ancilaries_Q4__c = null;
+							acc.Non_Ancilaries_Usado_Q1__c = null;
+							acc.Non_Ancilaries_Usado_Q2__c = null;
+							acc.Non_Ancilaries_Usado_Q3__c = null;
+							acc.Non_Ancilaries_Usado_Q4__c = null;
+							acc.Non_Ancilaries_Disponible_Q1__c = null;
+							acc.Non_Ancilaries_Disponible_Q2__c = null;
+							acc.Non_Ancilaries_Disponible_Q3__c = null;
+							acc.Non_Ancilaries_Disponible_Q4__c = null;
+							accountsToUpdate.add(acc);
+						}
+					}
+				}else if (newMap.get(ambId).Activo__c == true && newMap.get(ambId).RecordTypeId == corporatesRT) {
+					for (Account acc : corporates) {
+						if (newMap.get(ambId).Presupuesto_corporativo__c == acc.Id) { // Find corporates by Id
+							if (acc.Id_Presupuesto__c != null) {
+								newMap.get(ambId).addError('Hay presupuestos activos para este corporativo');
+							}else {
+								acc.Id_Presupuesto__c = ambId;  // If the Id_Presupuesto__c field on account is empty, the inserting budget is allocated
+								acc.Presupuesto_disponible__c = newMap.get(ambId).Disponible_ce__c;
+								acc.Monto_Usado_Q1__c = newMap.get(ambId).Presupuesto_UsadoQ1__c;
+								acc.Monto_Usado_Q2__c = newMap.get(ambId).Presupuesto_UsadoQ2__c;
+								acc.Monto_Usado_Q3__c = newMap.get(ambId).Presupuesto_UsadoQ3__c;
+								acc.Monto_Usado_Q4__c = newMap.get(ambId).Presupuesto_UsadoQ4__c;
+
+								acc.Monto_Currency_Q1__c = newMap.get(ambId).Monto_Q1_Currency__c;
+								acc.Monto_Currency_Q2__c = newMap.get(ambId).Monto_Q2_Currency__c;
+								acc.Monto_Currency_Q3__c = newMap.get(ambId).Monto_Q3_Currency__c;
+								acc.Monto_Currency_Q4__c = newMap.get(ambId).Monto_Q4_Currency__c;
+
+								acc.Monto_Disponible_Q1__c = newMap.get(ambId).DisponibleQ1__c;
+								acc.Monto_Disponible_Q2__c = newMap.get(ambId).DisponibleQ2__c;
+								acc.Monto_Disponible_Q3__c = newMap.get(ambId).DisponibleQ3__c;
+								acc.Monto_Disponible_Q4__c = newMap.get(ambId).DisponibleQ4__c;
+
+								acc.Ancilaries_Q1__c = newMap.get(ambId).Monto_Ancillaries_Q1__c;
+								acc.Ancilaries_Q2__c = newMap.get(ambId).Monto_Ancillaries_Q2__c;
+								acc.Ancilaries_Q3__c = newMap.get(ambId).Monto_Ancillaries_Q3__c;
+								acc.Ancilaries_Q4__c = newMap.get(ambId).Monto_Ancillaries_Q4__c;
+
+								acc.Ancilaries_Usado_Q1__c = newMap.get(ambId).Ancillaries_usado_Q1__c;
+								acc.Ancilaries_Usado_Q2__c = newMap.get(ambId).Ancillaries_usado_Q2__c;
+								acc.Ancilaries_Usado_Q3__c = newMap.get(ambId).Ancillaries_usado_Q3__c;
+								acc.Ancilaries_Usado_Q4__c = newMap.get(ambId).Ancillaries_usado_Q4__c;
+
+								acc.Ancilaries_Disponible_Q1__c = newMap.get(ambId).Ancillaries_Disponible_Q1__c;
+								acc.Ancilaries_Disponible_Q2__c = newMap.get(ambId).Ancillaries_Disponible_Q2__c;
+								acc.Ancilaries_Disponible_Q3__c = newMap.get(ambId).Ancillaries_Disponible_Q3__c;
+								acc.Ancilaries_Disponible_Q4__c = newMap.get(ambId).Ancillaries_Disponible_Q4__c;
+
+								acc.Non_Ancilaries_Q1__c = newMap.get(ambId).Monto_No_Ancillaries_Q1__c;
+								acc.Non_Ancilaries_Q2__c = newMap.get(ambId).Monto_No_Ancillaries_Q2__c;
+								acc.Non_Ancilaries_Q3__c = newMap.get(ambId).Monto_No_Ancillaries_Q3__c;
+								acc.Non_Ancilaries_Q4__c = newMap.get(ambId).Monto_No_Ancillaries_Q4__c;
+
+								acc.Non_Ancilaries_Usado_Q1__c = newMap.get(ambId).Non_Ancillaries_usado_Q1__c;
+								acc.Non_Ancilaries_Usado_Q2__c = newMap.get(ambId).Non_Ancillaries_usado_Q2__c;
+								acc.Non_Ancilaries_Usado_Q3__c = newMap.get(ambId).Non_Ancillaries_usado_Q3__c;
+								acc.Non_Ancilaries_Usado_Q4__c = newMap.get(ambId).Non_Ancillaries_usado_Q4__c;
+
+								acc.Non_Ancilaries_Disponible_Q1__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q1__c;
+								acc.Non_Ancilaries_Disponible_Q2__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q2__c;
+								acc.Non_Ancilaries_Disponible_Q3__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q3__c;
+								acc.Non_Ancilaries_Disponible_Q4__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q4__c;
+
+								accountsToUpdate.add(acc);
+							}	
+						}
+					}
+				}
+			}else if (newMap.get(ambId).Disponible_ce__c != oldMap.get(ambId).Disponible_ce__c  && newMap.get(ambId).RecordTypeId == corporatesRT && newMap.get(ambId).Activo__c == true){
+				for (Account acc: corporates) {
+					if (ambId == acc.Id_Presupuesto__c) {
+						acc.Presupuesto_disponible__c = newMap.get(ambId).Disponible_ce__c;
+						acc.Monto_Usado_Q1__c = newMap.get(ambId).Presupuesto_UsadoQ1__c;
+						acc.Monto_Usado_Q2__c = newMap.get(ambId).Presupuesto_UsadoQ2__c;
+						acc.Monto_Usado_Q3__c = newMap.get(ambId).Presupuesto_UsadoQ3__c;
+						acc.Monto_Usado_Q4__c = newMap.get(ambId).Presupuesto_UsadoQ4__c;
+
+						acc.Monto_Currency_Q1__c = newMap.get(ambId).Monto_Q1_Currency__c;
+						acc.Monto_Currency_Q2__c = newMap.get(ambId).Monto_Q2_Currency__c;
+						acc.Monto_Currency_Q3__c = newMap.get(ambId).Monto_Q3_Currency__c;
+						acc.Monto_Currency_Q4__c = newMap.get(ambId).Monto_Q4_Currency__c;
+
+						acc.Monto_Disponible_Q1__c = newMap.get(ambId).DisponibleQ1__c;
+						acc.Monto_Disponible_Q2__c = newMap.get(ambId).DisponibleQ2__c;
+						acc.Monto_Disponible_Q3__c = newMap.get(ambId).DisponibleQ3__c;
+						acc.Monto_Disponible_Q4__c = newMap.get(ambId).DisponibleQ4__c;
+
+						acc.Ancilaries_Q1__c = newMap.get(ambId).Monto_Ancillaries_Q1__c;
+						acc.Ancilaries_Q2__c = newMap.get(ambId).Monto_Ancillaries_Q2__c;
+						acc.Ancilaries_Q3__c = newMap.get(ambId).Monto_Ancillaries_Q3__c;
+						acc.Ancilaries_Q4__c = newMap.get(ambId).Monto_Ancillaries_Q4__c;
+
+						acc.Ancilaries_Usado_Q1__c = newMap.get(ambId).Ancillaries_usado_Q1__c;
+						acc.Ancilaries_Usado_Q2__c = newMap.get(ambId).Ancillaries_usado_Q2__c;
+						acc.Ancilaries_Usado_Q3__c = newMap.get(ambId).Ancillaries_usado_Q3__c;
+						acc.Ancilaries_Usado_Q4__c = newMap.get(ambId).Ancillaries_usado_Q4__c;
+
+						acc.Ancilaries_Disponible_Q1__c = newMap.get(ambId).Ancillaries_Disponible_Q1__c;
+						acc.Ancilaries_Disponible_Q2__c = newMap.get(ambId).Ancillaries_Disponible_Q2__c;
+						acc.Ancilaries_Disponible_Q3__c = newMap.get(ambId).Ancillaries_Disponible_Q3__c;
+						acc.Ancilaries_Disponible_Q4__c = newMap.get(ambId).Ancillaries_Disponible_Q4__c;
+
+						acc.Non_Ancilaries_Q1__c = newMap.get(ambId).Monto_No_Ancillaries_Q1__c;
+						acc.Non_Ancilaries_Q2__c = newMap.get(ambId).Monto_No_Ancillaries_Q2__c;
+						acc.Non_Ancilaries_Q3__c = newMap.get(ambId).Monto_No_Ancillaries_Q3__c;
+						acc.Non_Ancilaries_Q4__c = newMap.get(ambId).Monto_No_Ancillaries_Q4__c;
+
+						acc.Non_Ancilaries_Usado_Q1__c = newMap.get(ambId).Non_Ancillaries_usado_Q1__c;
+						acc.Non_Ancilaries_Usado_Q2__c = newMap.get(ambId).Non_Ancillaries_usado_Q2__c;
+						acc.Non_Ancilaries_Usado_Q3__c = newMap.get(ambId).Non_Ancillaries_usado_Q3__c;
+						acc.Non_Ancilaries_Usado_Q4__c = newMap.get(ambId).Non_Ancillaries_usado_Q4__c;
+
+						acc.Non_Ancilaries_Disponible_Q1__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q1__c;
+						acc.Non_Ancilaries_Disponible_Q2__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q2__c;
+						acc.Non_Ancilaries_Disponible_Q3__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q3__c;
+						acc.Non_Ancilaries_Disponible_Q4__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q4__c;
+
+						accountsToUpdate.add(acc);
+					}
+				}
+			}else if (newMap.get(ambId).Presupuesto_corporativo__c != oldMap.get(ambId).Presupuesto_corporativo__c  && newMap.get(ambId).RecordTypeId == corporatesRT && newMap.get(ambId).Activo__c == true) {
+				for (Account acc : corporates) {
+					if (newMap.get(ambId).Presupuesto_corporativo__c == acc.Id) { // Find corporates by Id
+						if (acc.Id_Presupuesto__c != null) {
+							newMap.get(ambId).addError('Hay presupuestos activos para este corporativo');
+						}else{
+							acc.Id_Presupuesto__c = ambId;  // If the Id_Presupuesto__c field on account is empty, the inserting budget is allocated
+							acc.Presupuesto_disponible__c = newMap.get(ambId).Disponible_ce__c;
+							acc.Monto_Usado_Q1__c = newMap.get(ambId).Presupuesto_UsadoQ1__c;
+							acc.Monto_Usado_Q2__c = newMap.get(ambId).Presupuesto_UsadoQ2__c;
+							acc.Monto_Usado_Q3__c = newMap.get(ambId).Presupuesto_UsadoQ3__c;
+							acc.Monto_Usado_Q4__c = newMap.get(ambId).Presupuesto_UsadoQ4__c;
+
+							acc.Monto_Currency_Q1__c = newMap.get(ambId).Monto_Q1_Currency__c;
+							acc.Monto_Currency_Q2__c = newMap.get(ambId).Monto_Q2_Currency__c;
+							acc.Monto_Currency_Q3__c = newMap.get(ambId).Monto_Q3_Currency__c;
+							acc.Monto_Currency_Q4__c = newMap.get(ambId).Monto_Q4_Currency__c;
+
+							acc.Monto_Disponible_Q1__c = newMap.get(ambId).DisponibleQ1__c;
+							acc.Monto_Disponible_Q2__c = newMap.get(ambId).DisponibleQ2__c;
+							acc.Monto_Disponible_Q3__c = newMap.get(ambId).DisponibleQ3__c;
+							acc.Monto_Disponible_Q4__c = newMap.get(ambId).DisponibleQ4__c;
+
+							acc.Ancilaries_Q1__c = newMap.get(ambId).Monto_Ancillaries_Q1__c;
+							acc.Ancilaries_Q2__c = newMap.get(ambId).Monto_Ancillaries_Q2__c;
+							acc.Ancilaries_Q3__c = newMap.get(ambId).Monto_Ancillaries_Q3__c;
+							acc.Ancilaries_Q4__c = newMap.get(ambId).Monto_Ancillaries_Q4__c;
+
+							acc.Ancilaries_Usado_Q1__c = newMap.get(ambId).Ancillaries_usado_Q1__c;
+							acc.Ancilaries_Usado_Q2__c = newMap.get(ambId).Ancillaries_usado_Q2__c;
+							acc.Ancilaries_Usado_Q3__c = newMap.get(ambId).Ancillaries_usado_Q3__c;
+							acc.Ancilaries_Usado_Q4__c = newMap.get(ambId).Ancillaries_usado_Q4__c;
+
+							acc.Ancilaries_Disponible_Q1__c = newMap.get(ambId).Ancillaries_Disponible_Q1__c;
+							acc.Ancilaries_Disponible_Q2__c = newMap.get(ambId).Ancillaries_Disponible_Q2__c;
+							acc.Ancilaries_Disponible_Q3__c = newMap.get(ambId).Ancillaries_Disponible_Q3__c;
+							acc.Ancilaries_Disponible_Q4__c = newMap.get(ambId).Ancillaries_Disponible_Q4__c;
+
+							acc.Non_Ancilaries_Q1__c = newMap.get(ambId).Monto_No_Ancillaries_Q1__c;
+							acc.Non_Ancilaries_Q2__c = newMap.get(ambId).Monto_No_Ancillaries_Q2__c;
+							acc.Non_Ancilaries_Q3__c = newMap.get(ambId).Monto_No_Ancillaries_Q3__c;
+							acc.Non_Ancilaries_Q4__c = newMap.get(ambId).Monto_No_Ancillaries_Q4__c;
+							
+							acc.Non_Ancilaries_Usado_Q1__c = newMap.get(ambId).Non_Ancillaries_usado_Q1__c;
+							acc.Non_Ancilaries_Usado_Q2__c = newMap.get(ambId).Non_Ancillaries_usado_Q2__c;
+							acc.Non_Ancilaries_Usado_Q3__c = newMap.get(ambId).Non_Ancillaries_usado_Q3__c;
+							acc.Non_Ancilaries_Usado_Q4__c = newMap.get(ambId).Non_Ancillaries_usado_Q4__c;
+
+							acc.Non_Ancilaries_Disponible_Q1__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q1__c;
+							acc.Non_Ancilaries_Disponible_Q2__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q2__c;
+							acc.Non_Ancilaries_Disponible_Q3__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q3__c;
+							acc.Non_Ancilaries_Disponible_Q4__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q4__c;
+							accountsToUpdate.add(acc);
+						}	
+					}
+
+					else if (oldMap.get(ambId).Presupuesto_corporativo__c == acc.Id) { // Find corporates by Id
+							acc.Id_Presupuesto__c         = null;  // If the budget exist on some corporate account, clean the Id_Presupuesto__c
+							acc.Presupuesto_disponible__c = null;
+							acc.Monto_Currency_Q1__c = null;
+							acc.Monto_Currency_Q2__c = null;
+							acc.Monto_Currency_Q3__c = null;
+							acc.Monto_Currency_Q4__c = null;
+							acc.Monto_Usado_Q1__c = null;
+							acc.Monto_Usado_Q2__c = null;
+							acc.Monto_Usado_Q3__c = null;
+							acc.Monto_Usado_Q4__c = null;
+							acc.Monto_Disponible_Q1__c = null;
+							acc.Monto_Disponible_Q2__c = null;
+							acc.Monto_Disponible_Q3__c = null;
+							acc.Monto_Disponible_Q4__c = null;
+							acc.Ancilaries_Disponible_Q1__c = null;
+							acc.Ancilaries_Disponible_Q2__c = null;
+							acc.Ancilaries_Disponible_Q3__c = null;
+							acc.Ancilaries_Disponible_Q4__c = null;
+							acc.Ancilaries_Q1__c = null;
+							acc.Ancilaries_Q2__c = null;
+							acc.Ancilaries_Q3__c = null;
+							acc.Ancilaries_Q4__c = null;
+							acc.Ancilaries_Usado_Q1__c = null;
+							acc.Ancilaries_Usado_Q2__c = null;
+							acc.Ancilaries_Usado_Q3__c = null;
+							acc.Ancilaries_Usado_Q4__c = null;
+							acc.Non_Ancilaries_Q1__c = null;
+							acc.Non_Ancilaries_Q2__c = null;
+							acc.Non_Ancilaries_Q3__c = null;
+							acc.Non_Ancilaries_Q4__c = null;
+							acc.Non_Ancilaries_Usado_Q1__c = null;
+							acc.Non_Ancilaries_Usado_Q2__c = null;
+							acc.Non_Ancilaries_Usado_Q3__c = null;
+							acc.Non_Ancilaries_Usado_Q4__c = null;
+							acc.Non_Ancilaries_Disponible_Q1__c = null;
+							acc.Non_Ancilaries_Disponible_Q2__c = null;
+							acc.Non_Ancilaries_Disponible_Q3__c = null;
+							acc.Non_Ancilaries_Disponible_Q4__c = null;
+							accountsToUpdate.add(acc);
+						accountsToUpdate.add(acc);
+					}
+				}
+			}
+		}
+		return accountsToUpdate;
+	}
+
+	public static List<User> putIdBudgetsToExecutives (List<Amount_Budget__c> budgets, List<User> executives) {
+
+		List<User> executivesToUpdate = new List<User>();
+		Id executivesRT = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Ejecutivos').getRecordTypeId();
+		
+		for (Amount_Budget__c amb : budgets) { // Iterate the budgets that are inserting
+			if (amb.Activo__c == true && amb.RecordTypeId == executivesRT) {   
+				for (User user : executives) {
+					if (amb.Usuario__c == user.Id) { // Search related users 
+						if (user.Id_Presupuesto__c != null) {
+							amb.addError('Hay presupuestos activos relacionados a este ejecutivo');
+						}else {
+							user.Id_Presupuesto__c = amb.Id; // If the Id_Presupuesto__c field on account is empty, the Id inserting budget is allocated
+							user.Presupuesto_disponible__c = amb.Disponible_ce__c;
+							user.Monto_Usado_Q1__c = amb.Presupuesto_UsadoQ1__c;
+							user.Monto_Usado_Q2__c = amb.Presupuesto_UsadoQ2__c;
+							user.Monto_Usado_Q3__c = amb.Presupuesto_UsadoQ3__c;
+							user.Monto_Usado_Q4__c = amb.Presupuesto_UsadoQ4__c;
+
+							user.Monto_Q1__c = amb.Monto_Q1_Currency__c;
+							user.Monto_Q2__c = amb.Monto_Q2_Currency__c;
+							user.Monto_Q3__c = amb.Monto_Q3_Currency__c;
+							user.Monto_Q4__c = amb.Monto_Q4_Currency__c;
+
+							user.Monto_Disponible_Q1__c = amb.DisponibleQ1__c;
+							user.Monto_Disponible_Q2__c = amb.DisponibleQ2__c;
+							user.Monto_Disponible_Q3__c = amb.DisponibleQ3__c;
+							user.Monto_Disponible_Q4__c = amb.DisponibleQ4__c;
+
+							user.Ancilaries_Q1__c = amb.Monto_Ancillaries_Q1__c;
+							user.Ancilaries_Q2__c = amb.Monto_Ancillaries_Q2__c;
+							user.Ancilaries_Q3__c = amb.Monto_Ancillaries_Q3__c;
+							user.Ancilaries_Q4__c = amb.Monto_Ancillaries_Q4__c;
+
+							user.Ancilaries_Usado_Q1__c = amb.Ancillaries_usado_Q1__c;
+							user.Ancilaries_Usado_Q2__c = amb.Ancillaries_usado_Q2__c;
+							user.Ancilaries_Usado_Q3__c = amb.Ancillaries_usado_Q3__c;
+							user.Ancilaries_Usado_Q4__c = amb.Ancillaries_usado_Q4__c;
+
+							user.Ancilaries_Disponible_Q1__c = amb.Ancillaries_Disponible_Q1__c;
+							user.Ancilaries_Disponible_Q2__c = amb.Ancillaries_Disponible_Q2__c;
+							user.Ancilaries_Disponible_Q3__c = amb.Ancillaries_Disponible_Q3__c;
+							user.Ancilaries_Disponible_Q4__c = amb.Ancillaries_Disponible_Q4__c;
+
+							user.Non_Ancilaries_Q1__c = amb.Monto_No_Ancillaries_Q1__c;
+							user.Non_Ancilaries_Q2__c = amb.Monto_No_Ancillaries_Q2__c;
+							user.Non_Ancilaries_Q3__c = amb.Monto_No_Ancillaries_Q3__c;
+							user.Non_Ancilaries_Q4__c = amb.Monto_No_Ancillaries_Q4__c;
+
+							user.Non_Ancilaries_Usado_Q1__c = amb.Non_Ancillaries_usado_Q1__c;
+							user.Non_Ancilaries_Usado_Q2__c = amb.Non_Ancillaries_usado_Q2__c;
+							user.Non_Ancilaries_Usado_Q3__c = amb.Non_Ancillaries_usado_Q3__c;
+							user.Non_Ancilaries_Usado_Q4__c = amb.Non_Ancillaries_usado_Q4__c;
+
+							user.Non_Ancilaries_Disponible_Q1__c = amb.Non_Ancillaries_Disponible_Q1__c;
+							user.Non_Ancilaries_Disponible_Q2__c = amb.Non_Ancillaries_Disponible_Q2__c;
+							user.Non_Ancilaries_Disponible_Q3__c = amb.Non_Ancillaries_Disponible_Q3__c;
+							user.Non_Ancilaries_Disponible_Q4__c = amb.Non_Ancillaries_Disponible_Q4__c;
+							executivesToUpdate.add(user);
+						}	
+					}
+				}
+			} 
+		}
+		return executivesToUpdate;
+	}
+ 
+	public static List<User> putAndRemoveExecBudget(Map<Id,Amount_Budget__c> newMap, Map<Id,Amount_Budget__c> oldMap, set<String> gssExecutivesIds) {
+
+		List<User> usersToUpdate = new List<User>();
+		List<User> executives 	 = [SELECT Id, Name, Id_Presupuesto__c, Presupuesto_disponible__c, Recibe_presupuesto__c, Monto_Q1__c, Monto_Q2__c, Monto_Q3__c,Monto_Q4__c,
+									Ancilaries_Q1__c, Ancilaries_Q2__c, Ancilaries_Q3__c, Ancilaries_Q4__c,Ancilaries_Disponible_Q1__c,Ancilaries_Disponible_Q2__c,Ancilaries_Disponible_Q3__c,Ancilaries_Disponible_Q4__c,
+									Ancilaries_Usado_Q1__c,Ancilaries_Usado_Q2__c,Ancilaries_Usado_Q3__c,Ancilaries_Usado_Q4__c, Non_Ancilaries_Disponible_Q1__c,Non_Ancilaries_Disponible_Q2__c,Non_Ancilaries_Disponible_Q3__c,Non_Ancilaries_Disponible_Q4__c,
+									Non_Ancilaries_Q1__c,Non_Ancilaries_Q2__c,Non_Ancilaries_Q3__c,Non_Ancilaries_Q4__c, Non_Ancilaries_Usado_Q1__c,Non_Ancilaries_Usado_Q2__c,Non_Ancilaries_Usado_Q3__c,Non_Ancilaries_Usado_Q4__c,
+									Monto_Disponible_Q1__c,Monto_Disponible_Q2__c,Monto_Disponible_Q3__c,Monto_Disponible_Q4__c,Monto_Usado_Q1__c,Monto_Usado_Q2__c,Monto_Usado_Q3__c,Monto_Usado_Q4__c
+		 							FROM User WHERE Recibe_presupuesto__c = true AND IsActive = true AND Id IN: gssExecutivesIds];
+		Id executivesRT = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Ejecutivos').getRecordTypeId();
+		
+        System.debug('Consulta de Ej:' + String.valueOf(executives));
+		String availableBudget;
+		for (Id ambId : newMap.keySet()) { // Iterate the Id budgets that are inserting
+			if (newMap.get(ambId).Activo__c != oldMap.get(ambId).Activo__c && newMap.get(ambId).Usuario__c != null) { // only if the old values are different to the new values
+				if (newMap.get(ambId).Activo__c == false) {
+					for (User user : executives) {
+						if (ambId == user.Id_Presupuesto__c) {
+							user.Id_Presupuesto__c          = null;  // If the budget exist on some user, clean the Id_Presupuesto__c
+							user.Presupuesto_disponible__c	= null;
+							user.Monto_Usado_Q1__c = null;
+							user.Monto_Usado_Q2__c = null;
+							user.Monto_Usado_Q3__c = null;
+							user.Monto_Usado_Q4__c = null;
+
+							user.Monto_Q1__c = null;
+							user.Monto_Q2__c = null;
+							user.Monto_Q3__c = null;
+							user.Monto_Q4__c = null;
+
+							user.Monto_Disponible_Q1__c = null;
+							user.Monto_Disponible_Q2__c = null;
+							user.Monto_Disponible_Q3__c = null;
+							user.Monto_Disponible_Q4__c = null;
+						
+							user.Ancilaries_Q1__c = null;
+							user.Ancilaries_Q2__c = null;
+							user.Ancilaries_Q3__c = null;
+							user.Ancilaries_Q4__c = null;
+						
+							user.Ancilaries_Usado_Q1__c = null;
+							user.Ancilaries_Usado_Q2__c = null;
+							user.Ancilaries_Usado_Q3__c = null;
+							user.Ancilaries_Usado_Q4__c = null;
+						
+							user.Ancilaries_Disponible_Q1__c =null;
+							user.Ancilaries_Disponible_Q2__c =null;
+							user.Ancilaries_Disponible_Q3__c =null;
+							user.Ancilaries_Disponible_Q4__c =null;
+						
+							user.Non_Ancilaries_Q1__c = null;
+							user.Non_Ancilaries_Q2__c = null;
+							user.Non_Ancilaries_Q3__c = null;
+							user.Non_Ancilaries_Q4__c = null;
+						
+							user.Non_Ancilaries_Usado_Q1__c = null;
+							user.Non_Ancilaries_Usado_Q2__c = null;
+							user.Non_Ancilaries_Usado_Q3__c = null;
+							user.Non_Ancilaries_Usado_Q4__c = null;
+						
+							user.Non_Ancilaries_Disponible_Q1__c = null;
+							user.Non_Ancilaries_Disponible_Q2__c = null;
+							user.Non_Ancilaries_Disponible_Q3__c = null;
+							user.Non_Ancilaries_Disponible_Q4__c = null;
+							
+							user.Budget_disponible__c 		= null;
+							usersToUpdate.add(user);
+						}
+					}
+				}else if (newMap.get(ambId).Activo__c == true && newMap.get(ambId).Usuario__c != null) {
+					for (User user : executives) {
+						if (newMap.get(ambId).Usuario__c == user.Id) { // Find executives by Id
+							if (user.Id_Presupuesto__c != null) {
+								newMap.get(ambId).addError('Hay presupuestos activos para este ejecutivo');
+							}else{
+								user.Id_Presupuesto__c 			= ambId;  // If the Id_Presupuesto__c field on user is empty, the inserting budget is allocated
+								user.Presupuesto_disponible__c	= newMap.get(ambId).Disponible_ce__c;
+								user.Monto_Usado_Q1__c = newMap.get(ambId).Presupuesto_UsadoQ1__c;
+								user.Monto_Usado_Q2__c = newMap.get(ambId).Presupuesto_UsadoQ2__c;
+								user.Monto_Usado_Q3__c = newMap.get(ambId).Presupuesto_UsadoQ3__c;
+								user.Monto_Usado_Q4__c = newMap.get(ambId).Presupuesto_UsadoQ4__c;
+
+								user.Monto_Q1__c = newMap.get(ambId).Monto_Q1_Currency__c;
+								user.Monto_Q2__c = newMap.get(ambId).Monto_Q2_Currency__c;
+								user.Monto_Q3__c = newMap.get(ambId).Monto_Q3_Currency__c;
+								user.Monto_Q4__c = newMap.get(ambId).Monto_Q4_Currency__c;
+
+								user.Monto_Disponible_Q1__c = newMap.get(ambId).DisponibleQ1__c;
+								user.Monto_Disponible_Q2__c = newMap.get(ambId).DisponibleQ2__c;
+								user.Monto_Disponible_Q3__c = newMap.get(ambId).DisponibleQ3__c;
+								user.Monto_Disponible_Q4__c = newMap.get(ambId).DisponibleQ4__c;
+
+								user.Ancilaries_Q1__c = newMap.get(ambId).Monto_Ancillaries_Q1__c;
+								user.Ancilaries_Q2__c = newMap.get(ambId).Monto_Ancillaries_Q2__c;
+								user.Ancilaries_Q3__c = newMap.get(ambId).Monto_Ancillaries_Q3__c;
+								user.Ancilaries_Q4__c = newMap.get(ambId).Monto_Ancillaries_Q4__c;
+
+								user.Ancilaries_Usado_Q1__c = newMap.get(ambId).Ancillaries_usado_Q1__c;
+								user.Ancilaries_Usado_Q2__c = newMap.get(ambId).Ancillaries_usado_Q2__c;
+								user.Ancilaries_Usado_Q3__c = newMap.get(ambId).Ancillaries_usado_Q3__c;
+								user.Ancilaries_Usado_Q4__c = newMap.get(ambId).Ancillaries_usado_Q4__c;
+
+								user.Ancilaries_Disponible_Q1__c = newMap.get(ambId).Ancillaries_Disponible_Q1__c;
+								user.Ancilaries_Disponible_Q2__c = newMap.get(ambId).Ancillaries_Disponible_Q2__c;
+								user.Ancilaries_Disponible_Q3__c = newMap.get(ambId).Ancillaries_Disponible_Q3__c;
+								user.Ancilaries_Disponible_Q4__c = newMap.get(ambId).Ancillaries_Disponible_Q4__c;
+
+								user.Non_Ancilaries_Q1__c = newMap.get(ambId).Monto_No_Ancillaries_Q1__c;
+								user.Non_Ancilaries_Q2__c = newMap.get(ambId).Monto_No_Ancillaries_Q2__c;
+								user.Non_Ancilaries_Q3__c = newMap.get(ambId).Monto_No_Ancillaries_Q3__c;
+								user.Non_Ancilaries_Q4__c = newMap.get(ambId).Monto_No_Ancillaries_Q4__c;
+
+								user.Non_Ancilaries_Usado_Q1__c = newMap.get(ambId).Non_Ancillaries_usado_Q1__c;
+								user.Non_Ancilaries_Usado_Q2__c = newMap.get(ambId).Non_Ancillaries_usado_Q2__c;
+								user.Non_Ancilaries_Usado_Q3__c = newMap.get(ambId).Non_Ancillaries_usado_Q3__c;
+								user.Non_Ancilaries_Usado_Q4__c = newMap.get(ambId).Non_Ancillaries_usado_Q4__c;
+
+								user.Non_Ancilaries_Disponible_Q1__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q1__c;
+								user.Non_Ancilaries_Disponible_Q2__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q2__c;
+								user.Non_Ancilaries_Disponible_Q3__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q3__c;
+								user.Non_Ancilaries_Disponible_Q4__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q4__c;
+
+								String valueString = String.valueOf(newMap.get(ambId).Disponible_ce__c); //convert currency to string						
+								List<String> stringSplit = valueString.split('\\.'); // separate integer of decimals
+
+								availableBudget = getAvailableBudget(stringSplit[0]); // concatenate with comma the provided string 
+					
+								user.Budget_disponible__c 	= newMap.get(ambId).CurrencyIsoCode + ' ' + availableBudget + '.' + stringSplit[1]; // put te currency type + integer comma separated value + decimals
+								usersToUpdate.add(user);
+							}	
+						}
+					}
+				}
+			}else if (newMap.get(ambId).Disponible_ce__c != oldMap.get(ambId).Disponible_ce__c  && newMap.get(ambId).RecordTypeId == executivesRT && newMap.get(ambId).Activo__c == true) {
+
+				for (User user: executives) {
+					if (ambId == user.Id_Presupuesto__c) {
+						user.Presupuesto_disponible__c	= newMap.get(ambId).Disponible_ce__c;
+						user.Monto_Usado_Q1__c = newMap.get(ambId).Presupuesto_UsadoQ1__c;
+						user.Monto_Usado_Q2__c = newMap.get(ambId).Presupuesto_UsadoQ2__c;
+						user.Monto_Usado_Q3__c = newMap.get(ambId).Presupuesto_UsadoQ3__c;
+						user.Monto_Usado_Q4__c = newMap.get(ambId).Presupuesto_UsadoQ4__c;
+
+						user.Monto_Q1__c = newMap.get(ambId).Monto_Q1_Currency__c;
+						user.Monto_Q2__c = newMap.get(ambId).Monto_Q2_Currency__c;
+						user.Monto_Q3__c = newMap.get(ambId).Monto_Q3_Currency__c;
+						user.Monto_Q4__c = newMap.get(ambId).Monto_Q4_Currency__c;
+
+						user.Monto_Disponible_Q1__c = newMap.get(ambId).DisponibleQ1__c;
+						user.Monto_Disponible_Q2__c = newMap.get(ambId).DisponibleQ2__c;
+						user.Monto_Disponible_Q3__c = newMap.get(ambId).DisponibleQ3__c;
+						user.Monto_Disponible_Q4__c = newMap.get(ambId).DisponibleQ4__c;
+
+						user.Ancilaries_Q1__c = newMap.get(ambId).Monto_Ancillaries_Q1__c;
+						user.Ancilaries_Q2__c = newMap.get(ambId).Monto_Ancillaries_Q2__c;
+						user.Ancilaries_Q3__c = newMap.get(ambId).Monto_Ancillaries_Q3__c;
+						user.Ancilaries_Q4__c = newMap.get(ambId).Monto_Ancillaries_Q4__c;
+
+						user.Ancilaries_Usado_Q1__c = newMap.get(ambId).Ancillaries_usado_Q1__c;
+						user.Ancilaries_Usado_Q2__c = newMap.get(ambId).Ancillaries_usado_Q2__c;
+						user.Ancilaries_Usado_Q3__c = newMap.get(ambId).Ancillaries_usado_Q3__c;
+						user.Ancilaries_Usado_Q4__c = newMap.get(ambId).Ancillaries_usado_Q4__c;
+
+						user.Ancilaries_Disponible_Q1__c = newMap.get(ambId).Ancillaries_Disponible_Q1__c;
+						user.Ancilaries_Disponible_Q2__c = newMap.get(ambId).Ancillaries_Disponible_Q2__c;
+						user.Ancilaries_Disponible_Q3__c = newMap.get(ambId).Ancillaries_Disponible_Q3__c;
+						user.Ancilaries_Disponible_Q4__c = newMap.get(ambId).Ancillaries_Disponible_Q4__c;
+
+						user.Non_Ancilaries_Q1__c = newMap.get(ambId).Monto_No_Ancillaries_Q1__c;
+						user.Non_Ancilaries_Q2__c = newMap.get(ambId).Monto_No_Ancillaries_Q2__c;
+						user.Non_Ancilaries_Q3__c = newMap.get(ambId).Monto_No_Ancillaries_Q3__c;
+						user.Non_Ancilaries_Q4__c = newMap.get(ambId).Monto_No_Ancillaries_Q4__c;
+
+						user.Non_Ancilaries_Usado_Q1__c = newMap.get(ambId).Non_Ancillaries_usado_Q1__c;
+						user.Non_Ancilaries_Usado_Q2__c = newMap.get(ambId).Non_Ancillaries_usado_Q2__c;
+						user.Non_Ancilaries_Usado_Q3__c = newMap.get(ambId).Non_Ancillaries_usado_Q3__c;
+						user.Non_Ancilaries_Usado_Q4__c = newMap.get(ambId).Non_Ancillaries_usado_Q4__c;
+
+						user.Non_Ancilaries_Disponible_Q1__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q1__c;
+						user.Non_Ancilaries_Disponible_Q2__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q2__c;
+						user.Non_Ancilaries_Disponible_Q3__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q3__c;
+						user.Non_Ancilaries_Disponible_Q4__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q4__c;
+
+						String valueString = String.valueOf(newMap.get(ambId).Disponible_ce__c); //convert currency to string						
+						List<String> stringSplit = valueString.split('\\.'); // separate integer of decimals
+
+						availableBudget = getAvailableBudget(stringSplit[0]); // concatenate with comma the provided string 
+					
+						user.Budget_disponible__c 	= newMap.get(ambId).CurrencyIsoCode + ' ' + availableBudget + '.' + stringSplit[1]; // put te currency type + integer comma separated value + decimals
+						usersToUpdate.add(user);
+					}
+				}
+			}else if (newMap.get(ambId).Usuario__c != oldMap.get(ambId).Usuario__c  && newMap.get(ambId).RecordTypeId == executivesRT && newMap.get(ambId).Activo__c == true) {
+				for (User user : executives) {
+					if (newMap.get(ambId).Usuario__c == user.Id) { // Find executives by Id
+						if (user.Id_Presupuesto__c != null) {
+							newMap.get(ambId).addError('Hay presupuestos activos para este ejecutivo');
+						}else {
+							user.Id_Presupuesto__c 			= ambId;  // If the Id_Presupuesto__c field on user is empty, the inserting budget is allocated
+							user.Presupuesto_disponible__c	= newMap.get(ambId).Disponible_ce__c;
+							user.Monto_Usado_Q1__c = newMap.get(ambId).Presupuesto_UsadoQ1__c;
+							user.Monto_Usado_Q2__c = newMap.get(ambId).Presupuesto_UsadoQ2__c;
+							user.Monto_Usado_Q3__c = newMap.get(ambId).Presupuesto_UsadoQ3__c;
+							user.Monto_Usado_Q4__c = newMap.get(ambId).Presupuesto_UsadoQ4__c;
+
+							user.Monto_Q1__c = newMap.get(ambId).Monto_Q1_Currency__c;
+							user.Monto_Q2__c = newMap.get(ambId).Monto_Q2_Currency__c;
+							user.Monto_Q3__c = newMap.get(ambId).Monto_Q3_Currency__c;
+							user.Monto_Q4__c = newMap.get(ambId).Monto_Q4_Currency__c;
+							
+							user.Monto_Disponible_Q1__c = newMap.get(ambId).DisponibleQ1__c;
+							user.Monto_Disponible_Q2__c = newMap.get(ambId).DisponibleQ2__c;
+							user.Monto_Disponible_Q3__c = newMap.get(ambId).DisponibleQ3__c;
+							user.Monto_Disponible_Q4__c = newMap.get(ambId).DisponibleQ4__c;
+							
+							user.Ancilaries_Q1__c = newMap.get(ambId).Monto_Ancillaries_Q1__c;
+							user.Ancilaries_Q2__c = newMap.get(ambId).Monto_Ancillaries_Q2__c;
+							user.Ancilaries_Q3__c = newMap.get(ambId).Monto_Ancillaries_Q3__c;
+							user.Ancilaries_Q4__c = newMap.get(ambId).Monto_Ancillaries_Q4__c;
+							
+							user.Ancilaries_Usado_Q1__c = newMap.get(ambId).Ancillaries_usado_Q1__c;
+							user.Ancilaries_Usado_Q2__c = newMap.get(ambId).Ancillaries_usado_Q2__c;
+							user.Ancilaries_Usado_Q3__c = newMap.get(ambId).Ancillaries_usado_Q3__c;
+							user.Ancilaries_Usado_Q4__c = newMap.get(ambId).Ancillaries_usado_Q4__c;
+							
+							user.Ancilaries_Disponible_Q1__c = newMap.get(ambId).Ancillaries_Disponible_Q1__c;
+							user.Ancilaries_Disponible_Q2__c = newMap.get(ambId).Ancillaries_Disponible_Q2__c;
+							user.Ancilaries_Disponible_Q3__c = newMap.get(ambId).Ancillaries_Disponible_Q3__c;
+							user.Ancilaries_Disponible_Q4__c = newMap.get(ambId).Ancillaries_Disponible_Q4__c;
+							
+							user.Non_Ancilaries_Q1__c = newMap.get(ambId).Monto_No_Ancillaries_Q1__c;
+							user.Non_Ancilaries_Q2__c = newMap.get(ambId).Monto_No_Ancillaries_Q2__c;
+							user.Non_Ancilaries_Q3__c = newMap.get(ambId).Monto_No_Ancillaries_Q3__c;
+							user.Non_Ancilaries_Q4__c = newMap.get(ambId).Monto_No_Ancillaries_Q4__c;
+							
+							user.Non_Ancilaries_Usado_Q1__c = newMap.get(ambId).Non_Ancillaries_usado_Q1__c;
+							user.Non_Ancilaries_Usado_Q2__c = newMap.get(ambId).Non_Ancillaries_usado_Q2__c;
+							user.Non_Ancilaries_Usado_Q3__c = newMap.get(ambId).Non_Ancillaries_usado_Q3__c;
+							user.Non_Ancilaries_Usado_Q4__c = newMap.get(ambId).Non_Ancillaries_usado_Q4__c;
+							
+							user.Non_Ancilaries_Disponible_Q1__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q1__c;
+							user.Non_Ancilaries_Disponible_Q2__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q2__c;
+							user.Non_Ancilaries_Disponible_Q3__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q3__c;
+							user.Non_Ancilaries_Disponible_Q4__c = newMap.get(ambId).Non_Ancillaries_Disponible_Q4__c;
+							
+							String valueString = String.valueOf(newMap.get(ambId).Disponible_ce__c); //convert currency to string						
+							List<String> stringSplit = valueString.split('\\.'); // separate integer of decimals
+
+							availableBudget = getAvailableBudget(stringSplit[0]); // concatenate with comma the provided string 
+				
+							user.Budget_disponible__c 	= newMap.get(ambId).CurrencyIsoCode + ' ' + availableBudget + '.' + stringSplit[1]; // put te currency type + integer comma separated value + decimals
+							usersToUpdate.add(user);
+						}	
+					}
+
+					/*if (oldMap.get(ambId).Usuario__c == user.Id) { // Find executives by Id
+						user.Id_Presupuesto__c 		   	= null;  // find the Id_Presupuesto__c field on user and turn null
+						user.Presupuesto_disponible__c	= null;
+						user.Monto_Usado_Q1__c = null;
+						user.Monto_Usado_Q2__c = null;
+						user.Monto_Usado_Q3__c = null;
+						user.Monto_Usado_Q4__c = null;
+
+						user.Monto_Q1__c = null;
+						user.Monto_Q2__c = null;
+						user.Monto_Q3__c = null;
+						user.Monto_Q4__c = null;
+
+						user.Monto_Disponible_Q1__c = null;
+						user.Monto_Disponible_Q2__c = null;
+						user.Monto_Disponible_Q3__c = null;
+						user.Monto_Disponible_Q4__c = null;
+						
+						user.Ancilaries_Q1__c = null;
+						user.Ancilaries_Q2__c = null;
+						user.Ancilaries_Q3__c = null;
+						user.Ancilaries_Q4__c = null;
+						
+						user.Ancilaries_Usado_Q1__c = null;
+						user.Ancilaries_Usado_Q2__c = null;
+						user.Ancilaries_Usado_Q3__c = null;
+						user.Ancilaries_Usado_Q4__c = null;
+						
+						user.Ancilaries_Disponible_Q1__c =null;
+						user.Ancilaries_Disponible_Q2__c =null;
+						user.Ancilaries_Disponible_Q3__c =null;
+						user.Ancilaries_Disponible_Q4__c =null;
+						
+						user.Non_Ancilaries_Q1__c = null;
+						user.Non_Ancilaries_Q2__c = null;
+						user.Non_Ancilaries_Q3__c = null;
+						user.Non_Ancilaries_Q4__c = null;
+						
+						user.Non_Ancilaries_Usado_Q1__c = null;
+						user.Non_Ancilaries_Usado_Q2__c = null;
+						user.Non_Ancilaries_Usado_Q3__c = null;
+						user.Non_Ancilaries_Usado_Q4__c = null;
+						
+						user.Non_Ancilaries_Disponible_Q1__c = null;
+						user.Non_Ancilaries_Disponible_Q2__c = null;
+						user.Non_Ancilaries_Disponible_Q3__c = null;
+						user.Non_Ancilaries_Disponible_Q4__c = null;
+						user.Budget_disponible__c 		= null;
+						usersToUpdate.add(user);	
+					}*/
+				}
+			}	
+		}
+		return usersToUpdate;
+	}
+
+	public static String getAvailableBudget(String integerToString) {
+		String available;
+
+		switch on integerToString.length() {
+			when 9 {
+				String first  = integerToString.substring(0,3);
+				String second = integerToString.substring(3,6);
+				String third  = integerToString.substring(6,9);
+
+				available = first + ',' + second + ',' + third;
+			}
+
+			when 8 {
+				String first  = integerToString.substring(0,2);
+				String second = integerToString.substring(2,5);
+				String third  = integerToString.substring(5,8);
+
+				available = first + ',' + second + ',' + third;
+			}
+
+			when 7 {
+				String first  = integerToString.substring(0,1);
+				String second = integerToString.substring(1,4);
+				String third  = integerToString.substring(4,7);
+
+				available = first + ',' + second + ',' + third;
+			}
+
+			when 6 {
+				String first  = integerToString.substring(0,3);
+				String second = integerToString.substring(3,6);
+
+				available = first + ',' + second;
+			}
+
+			when 5 {
+				String first  = integerToString.substring(0,2);
+				String second = integerToString.substring(2,5);
+
+				available = first + ',' + second;
+			}
+
+			when 4 {
+				String first  = integerToString.substring(0,1);
+				String second = integerToString.substring(1,4);
+
+				available = first + ',' + second;
+			}
+		}
+
+		return available;
+	}
+
+}
