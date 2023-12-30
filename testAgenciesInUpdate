@@ -1,0 +1,571 @@
+@isTest(seeAllData = false)  
+public class TestTriggerAffectBudget { 
+
+
+    @isTest static void testAgenciesInUpdate() {
+  
+    	List<Case> 			   newCases = new List<Case>();
+    	List<Case> 			   oldCases = new List<Case>();
+    	List<Account> 		   accounts = new List<Account>();
+    	List<Amount_Budget__c> budgets  = new List<Amount_Budget__c>();
+
+	    Amount_Budget__c budget = createBudget('W-018-4Q', true, 'W-018', 20000, 2000, 3000, 80, 20);
+	   	budgets.add(budget);
+
+	   	Amount_Budget__c budget2 = createBudget('W-015-4Q', true, 'W-018', 20000, null, null, 80, 20);
+	   	budgets.add(budget2);
+
+	   	Amount_Budget__c budget3 = createBudget('W-019-4Q', true, 'W-018', 8000, null, null, 90, 10);
+	   	budgets.add(budget3);
+
+	   	Amount_Budget__c budget4 = createBudget('W-020-1Q', true, 'W-018', 8000, null, null, 90, 10); 
+	   	budgets.add(budget4);
+		
+		insert budgets;
+
+	    Account acc1 = createAccount('Account Test', budgets.get(0).Id, 'W-018');
+	    accounts.add(acc1);
+
+	    Account acc2 = createAccount('Account Test 2', null, 'W-018');
+	    accounts.add(acc2);
+
+	    Account acc3 = createAccount('Account Test 3', budgets.get(2).Id, 'W-018');
+	    accounts.add(acc3);
+
+	    Account acc4 = createAccount('Account Test 4', budgets.get(3).Id, 'W-018');
+	    accounts.add(acc4);
+
+	    insert accounts;
+
+	    //NO ANCILLARIES - Waivers Premium
+	    Case case5 = new Case(Status = 'Nuevo', Priority = 'Medium', Tipogss__c = 'Waivers Premium', Concepto__c ='CAMBIO DE CLASE', Sub_Concepto__c	= '2 NIVELES', Monto_Waiver__c = 600, se_cobra__c = accounts.get(0).Id);
+	    oldCases.add(case5);
+
+	    Case case6 = new Case(Status = 'Nuevo', Priority = 'Medium', Tipogss__c = 'Waivers Premium', Concepto__c ='CAMBIO DE CLASE', Sub_Concepto__c	= '2 NIVELES', Monto_Waiver__c = null, se_cobra__c = accounts.get(0).Id);
+	    oldCases.add(case6);
+
+	    //ANCILLARIES - Waivers Premium
+	    Case case7 = new Case(Status = 'Nuevo', Priority = 'High', Tipogss__c = 'Waivers Premium', Concepto__c ='ASIENTOS', Sub_Concepto__c	= 'PREFERENTE', Monto_Waiver__c = 550, se_cobra__c = accounts.get(0).Id);
+	    oldCases.add(case7);
+
+	    Case case8 = new Case(Status = 'Nuevo', Priority = 'High', Tipogss__c = 'Waivers Premium', Concepto__c ='ASIENTOS', Sub_Concepto__c	= 'PREFERENTE', Monto_Waiver__c = null, se_cobra__c = accounts.get(0).Id);
+	    oldCases.add(case8);
+
+	    Case case9 = new Case(Status = 'Nuevo', Priority = 'Low', Tipogss__c = 'Waivers Premium', Concepto__c ='ASIENTOS', Sub_Concepto__c	= 'PREFERENTE', Monto_Waiver__c = 2500, se_cobra__c = accounts.get(2).Id);
+	    oldCases.add(case9);
+
+	    Case case10 = new Case(Status = 'Nuevo', Priority = 'Low', Tipogss__c = 'Waivers Premium', Concepto__c ='CAMBIO DE CLASE', Sub_Concepto__c	= '1 NIVEL', Monto_Waiver__c = 2500, se_cobra__c = accounts.get(3).Id);
+	    oldCases.add(case10);
+
+	    // != Waivers Premium
+	    Case case11 = new Case(Status = 'Nuevo', Priority = 'High', Tipogss__c = 'Waivers Premium', Concepto__c ='ASIENTOS', Sub_Concepto__c	= 'PREFERENTE', Monto_Waiver__c = 2500, se_cobra__c = accounts.get(0).Id);
+	    oldCases.add(case11);
+
+	    //different amount
+	    Case case12 = new Case(Status = 'Confirmado', Priority = 'Medium', Tipogss__c = 'Waivers Premium', Concepto__c ='ASIENTOS', Sub_Concepto__c	= 'PREFERENTE', Monto_Waiver__c = 2500, se_cobra__c = acc4.Id);
+	    oldCases.add(case12);
+
+	    Case case13 = new Case(Status = 'Confirmado', Priority = 'Medium', Tipogss__c = 'Waivers Premium', Concepto__c ='CAMBIO DE CLASE', Sub_Concepto__c	= '2 NIVELES', Monto_Waiver__c = 600, se_cobra__c = acc3.Id);
+	    oldCases.add(case13);
+
+	    Case case14 = new Case(Status = 'Confirmado', Priority = 'Medium', Tipogss__c = 'Waivers Premium', Concepto__c ='ASIENTOS', Sub_Concepto__c	= 'PREFERENTE', Monto_Waiver__c = 200, se_cobra__c = acc4.Id);
+	    oldCases.add(case14);
+
+	    Case case15 = new Case(Status = 'Confirmado', Priority = 'Medium', Tipogss__c = 'Waivers Premium', Concepto__c ='CAMBIO DE CLASE', Sub_Concepto__c	= '2 NIVELES', Monto_Waiver__c = 100, se_cobra__c = acc3.Id);
+	    oldCases.add(case15);
+
+	    Case case16 = new Case(Status = 'Confirmado', Priority = 'Medium', Tipogss__c = 'Waivers Premium', Concepto__c ='CAMBIO DE CLASE', Sub_Concepto__c	= '2 NIVELES', Monto_Waiver__c = 100, se_cobra__c = accounts.get(0).Id);
+	    oldCases.add(case16);
+
+	    Case case17 = new Case(Status = 'Nuevo', Priority = 'High', Tipogss__c = 'Waivers Premium', Concepto__c ='ASIENTOS', Sub_Concepto__c	= 'PREFERENTE', Monto_Waiver__c = 550, se_cobra__c = accounts.get(1).Id);
+	    oldCases.add(case17);
+
+	    try{
+	        insert oldCases;
+	      }
+	      catch(Exception e){
+	       /* Boolean expectedExceptionThrown =  e.getMessage().contains('No hay ningún presupuesto activo para esta cuenta') ? true : false;
+	        System.AssertEquals(expectedExceptionThrown, true);*/
+	        System.debug('Error'+e);
+	      }
+
+	  	case5.Tipogss__c 	  = 'Waivers Premium';
+	  	case5.Concepto__c     = 'ASIENTOS';
+	  	case5.Sub_Concepto__c = 'AM PLUS';
+	  	case5.Monto_Waiver__c = 300;
+	  	case5.Status		  = 'Confirmado';
+	  	newCases.add(case5);
+
+	  	case6.Tipogss__c 	  = 'Waivers Premium';
+	  	case6.Concepto__c     = 'ASIENTOS';
+	  	case6.Sub_Concepto__c = 'AM PLUS';
+	  	case6.Monto_Waiver__c = null;
+	  	case6.Status		  = 'Confirmado';
+	  	newCases.add(case6);
+
+	  	case7.Tipogss__c 	  = 'Waivers Premium';
+	  	case7.Concepto__c     = 'CAMBIO DE CLASE';
+	  	case7.Sub_Concepto__c = '2 NIVELES';
+	  	case7.Monto_Waiver__c = 719;
+	  	Case7.Status	      = 'Confirmado'; 
+	  	newCases.add(case7);
+
+	  	case9.Tipogss__c      = 'Waivers Premium';
+	  	case9.Concepto__c     = 'CAMBIO DE CLASE';
+	  	case9.Sub_Concepto__c = '2 NIVELES';
+	  	case9.Monto_Waiver__c = 150;
+	  	case9.Status		  = 'Confirmado';
+	  	newCases.add(case9);
+
+	  	case10.Tipogss__c 	   = 'Waivers Premium';
+	  	case10.Concepto__c     = 'ASIENTOS';
+	  	case10.Sub_Concepto__c = 'PREFERENTE';
+	  	case10.Monto_Waiver__c = 150;
+	  	Case10.Status		   = 'Confirmado';
+	  	newCases.add(case10);
+
+	  	case11.Tipogss__c 	   = 'Waivers Standard';
+	  	case11.Concepto__c     = 'CAMBIO DE CLASE';
+	  	case11.Sub_Concepto__c = 'CAMBIO DE ITINERARIO';
+	  	case11.Monto_Waiver__c = 150;
+	  	case11.Status		   = 'Confirmado';
+	  	newCases.add(case11);
+
+	  	case12.Status = 'Cancelado';
+	  	newCases.add(case12);
+
+	  	case13.Status = 'Cancelado';
+	  	newCases.add(case13);
+
+	  	case14.Status = 'Cancelado';
+	  	newCases.add(case14);
+
+	  	case15.Status = 'Cancelado';
+	  	newCases.add(case15);
+
+	  	case16.Recalculate__c = true;
+	  	newCases.add(case16);
+
+	  	case17.Recalculate__c = true;
+	  	newCases.add(case17);
+
+	    Test.startTest();
+	    	try{
+	        	update newCases;
+		      }
+		      catch(Exception e){
+		        /*Boolean expectedExceptionThrown =  e.getMessage().contains('No hay ningún presupuesto activo para esta cuenta') ? true : false;
+		        System.AssertEquals(expectedExceptionThrown, true);*/
+		        System.debug('Error'+e);
+		      }
+	    Test.stopTest();
+
+    }
+
+    @isTest static void testItCodeInsert(){
+
+    	List<Case> cases = new List<Case>();
+
+    	Case case1 = new Case(Status = 'Confirmado', Priority = 'Low', Tipogss__c = 'Waivers Standard', Concepto__c ='ASIENTOS', Sub_Concepto__c = 'PREFERENTE', Monto_Waiver__c = 1000);
+	    cases.add(case1);
+
+	    Case case2 = new Case(Status = 'Confirmado', Priority = 'Medium', Tipogss__c = 'Waivers Premium', Concepto__c ='ASIENTOS', Sub_Concepto__c = 'PREFERENTE', Monto_Waiver__c = 1000);
+	    cases.add(case2);
+
+	    Case case3 = new Case(Status = 'Confirmado', Priority = 'Medium', Tipogss__c = 'UATP', Concepto__c ='EMISION/REVISADO', Sub_Concepto__c = 'EMISIÓN/REVISADO', Monto_Waiver__c = 100);
+	    cases.add(case3);
+
+	    Case case4 = new Case(Status = 'Confirmado', Priority = 'Medium', Tipogss__c = 'AUTORIZACIONES ESPECIALES', Concepto__c ='REEMBOLSO', Sub_Concepto__c = 'REEMBOLSOS', Monto_Waiver__c = 100);
+	    cases.add(case4);
+
+	    insert cases;
+
+    }	
+
+    @isTest static void testItCodeUpdate(){
+
+    	List<Case> cases 		 = new List<Case>();
+    	List<Case> casesToUpdate = new List<Case>();
+
+    	Case case1 = new Case(Status = 'Nuevo', Priority = 'Low', Monto_Waiver__c = 1000);
+	    cases.add(case1);
+
+	    Case case2 = new Case(Status = 'Nuevo', Priority = 'Medium', Monto_Waiver__c = 1000);
+	    cases.add(case2);
+
+	    insert cases;
+
+	    case1.Tipogss__c 	  = 'UATP';
+	  	case1.Status  		  = 'Confirmado';
+	  	case1.Concepto__c 	  = 'EMISION/REVISADO';
+	  	case1.Sub_Concepto__c = 'EMISIÓN/REVISADO';
+	  	casesToUpdate.add(case1);
+
+	  	case2.Tipogss__c 	  = 'AUTORIZACIONES ESPECIALES';
+	  	case2.Concepto__c 	  ='REEMBOLSO';
+	  	case2.Sub_Concepto__c = 'REEMBOLSOS';
+	  	case2.Status     	  = 'Confirmado';
+	  	casesToUpdate.add(case2);
+
+	  	update casesToUpdate;
+
+    }
+
+    @testSetup static void setup() {
+
+    	List<Amount_Budget__c> budgets = new List<Amount_Budget__c>();
+
+    	Amount_Budget__c budget1 = new Amount_Budget__c(Name = 'W030-EQ', Activo__c = true, Monto__c = 30000, ActivoQ1__c = true, ActivoQ2__c = false, ActivoQ3__c = false, ActivoQ4__c = false, Presupuesto_UsadoQ1__c = null); 
+		budget1.RecordTypeId = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Ejecutivos').getRecordTypeId();
+		budgets.add(budget1);
+
+		Amount_Budget__c budget2 = new Amount_Budget__c(Name = 'W031-EQ', Activo__c = true, Monto__c = 30000, ActivoQ1__c = false, ActivoQ2__c = true, ActivoQ3__c = false, ActivoQ4__c = false, Presupuesto_UsadoQ2__c = null); 
+		budget2.RecordTypeId = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Ejecutivos').getRecordTypeId();
+		budgets.add(budget2);
+
+		Amount_Budget__c budget3 = new Amount_Budget__c(Name = 'W032-EQ', Activo__c = true, Monto__c = 30000, ActivoQ1__c = false, ActivoQ2__c = false, ActivoQ3__c = true, ActivoQ4__c = false, Presupuesto_UsadoQ3__c = null); 
+		budget3.RecordTypeId = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Ejecutivos').getRecordTypeId();
+		budgets.add(budget3);
+
+		Amount_Budget__c budget4 = new Amount_Budget__c(Name = 'W033-EQ', Activo__c = true, Monto__c = 30000, ActivoQ1__c = false, ActivoQ2__c = false, ActivoQ3__c = false, ActivoQ4__c = true, Presupuesto_usadoQ4__c = null); 
+		budget4.RecordTypeId = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Ejecutivos').getRecordTypeId();
+		budgets.add(budget4);
+
+		Amount_Budget__c budget5 = new Amount_Budget__c(Name = 'W-142-Q4', Activo__c = true, Gss_Id__c = 'W-142-Q4', Monto__c = 50000, Ancillaries_usado__c	= 0, Non_Ancillaries_usado__c = 0, Porcentaje_Ancillaries__c = 80, Porcentaje_no_ancillaries__c = 20);
+		budget5.RecordTypeId = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Q4').getRecordTypeId();
+		budgets.add(budget5);
+
+		insert budgets;
+
+    }
+
+    @isTest static void testExecutivesInUpdate() {
+
+    	List<Case> oldCases	  = new List<Case>();
+    	List<Case> newCases   = new List<Case>();
+    	List<User> executives = new List<User>();
+
+    	Amount_Budget__c budget1 = [SELECT Id, Name, Activo__c, Monto__c, ActivoQ1__c, ActivoQ2__c, ActivoQ3__c, ActivoQ4__c FROM Amount_Budget__c WHERE Name = 'W030-EQ'];
+    	Amount_Budget__c budget2 = [SELECT Id, Name, Activo__c, Monto__c, ActivoQ1__c, ActivoQ2__c, ActivoQ3__c, ActivoQ4__c FROM Amount_Budget__c WHERE Name = 'W031-EQ'];
+    	Amount_Budget__c budget3 = [SELECT Id, Name, Activo__c, Monto__c, ActivoQ1__c, ActivoQ2__c, ActivoQ3__c, ActivoQ4__c FROM Amount_Budget__c WHERE Name = 'W032-EQ'];
+    	Amount_Budget__c budget4 = [SELECT Id, Name, Activo__c, Monto__c, ActivoQ1__c, ActivoQ2__c, ActivoQ3__c, ActivoQ4__c FROM Amount_Budget__c WHERE Name = 'W033-EQ'];
+
+    	User executive1 = [SELECT Id, Name, Id_Presupuesto__c, Recibe_presupuesto__c FROM User WHERE Recibe_presupuesto__c = true AND Name = 'CELIA MARIA SONIA OLIVERAS ZAYAS'];
+    	User executive2 = [SELECT Id, Name, Id_Presupuesto__c, Recibe_presupuesto__c FROM User WHERE Recibe_presupuesto__c = true AND Name = 'AIDA RUIZ ESTEPA'];
+    	User executive3 = [SELECT Id, Name, Id_Presupuesto__c, Recibe_presupuesto__c FROM User WHERE Recibe_presupuesto__c = true AND Name = 'MARK MOOREN'];
+    	User executive4 = [SELECT Id, Name, Id_Presupuesto__c, Recibe_presupuesto__c FROM User WHERE Recibe_presupuesto__c = true AND Name = 'MARIA DE LAS NIEVES RODRIGUEZ FERNANDEZ'];
+
+    	executive1.Id_Presupuesto__c = budget1.Id;
+    	executives.add(executive1);
+
+    	executive2.Id_Presupuesto__c = budget2.Id;
+    	executives.add(executive2);
+
+    	executive3.Id_Presupuesto__c = budget3.Id;
+    	executives.add(executive3);
+
+    	executive4.Id_Presupuesto__c = budget4.Id;
+    	executives.add(executive4);
+
+    	update executives;
+
+    	Case case1 = new Case(Status = 'Confirmado', Priority = 'Medium', Tipogss__c = 'Waivers Premium', Concepto__c ='CAMBIO DE CLASE', Sub_Concepto__c = '2 NIVELES', Monto_Waiver__c = 600, Usuario__c = executive1.Id);
+	    oldCases.add(case1);
+
+	    Case case2 = new Case(Status = 'Cancelado', Priority = 'Medium', Tipogss__c = 'Waivers Premium', Concepto__c ='CAMBIO DE CLASE', Sub_Concepto__c = '2 NIVELES', Monto_Waiver__c = 600, Usuario__c = executive1.Id);
+	    oldCases.add(case2);
+
+	    Case case3 = new Case(Status = 'Confirmado', Priority = 'Medium', Tipogss__c = 'Waivers Premium', Concepto__c ='CAMBIO DE CLASE', Sub_Concepto__c = '2 NIVELES', Monto_Waiver__c = 340, Usuario__c = executive2.Id);
+	    oldCases.add(case3);
+
+	    Case case4 = new Case(Status = 'Confirmado', Priority = 'Medium', Tipogss__c = 'Waivers Premium', Concepto__c ='CAMBIO DE CLASE', Sub_Concepto__c = '2 NIVELES', Monto_Waiver__c = 340, Usuario__c = executive3.Id);
+	    oldCases.add(case4);
+
+	    Case case5 = new Case(Status = 'Confirmado', Priority = 'Medium', Tipogss__c = 'Waivers Premium', Concepto__c ='CAMBIO DE CLASE', Sub_Concepto__c = '2 NIVELES', Monto_Waiver__c = 340, Usuario__c = executive4.Id);
+	    oldCases.add(case5);
+
+	    case5.Status = 'Confirmado';
+
+	    insert oldCases;
+
+	    case1.Status = 'Cancelado';
+	    newCases.add(case1);
+
+	    case2.Monto_Waiver__c = 100;
+	    newCases.add(case2);
+
+	    case3.Status = 'Confirmado';
+	    newCases.add(case3);
+
+
+	    Test.startTest();
+	    	try{
+		       update newCases;
+		    }
+		    catch(Exception e){
+		        /*Boolean expectedExceptionThrown =  e.getMessage().contains('No hay ningún presupuesto activo para este usuario') ? true : false;
+		        System.AssertEquals(expectedExceptionThrown, true);*/
+		    }
+
+	    Test.stopTest();
+
+    }
+
+    @isTest static void testCorporatesInUpdate() { 
+
+    	List<Case> oldCases	= new List<Case>();
+    	List<Case> newCases = new List<Case>();
+
+		Amount_Budget__c budget1 = new Amount_Budget__c(Name = 'W031-CQ', Activo__c = true, Monto__c = 30000, ActivoQ1__c = true, ActivoQ2__c = false, ActivoQ3__c = false, ActivoQ4__c = false, Presupuesto_UsadoQ1__c = null); 
+		budget1.RecordTypeId = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Corporativos').getRecordTypeId();
+		insert budget1;	
+
+		Amount_Budget__c budget2 = new Amount_Budget__c(Name = 'W035-CQ', Activo__c = true, Monto__c = 30000, ActivoQ1__c = false, ActivoQ2__c = true, ActivoQ3__c = false, ActivoQ4__c = false, Presupuesto_UsadoQ2__c = null); 
+		budget2.RecordTypeId = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Corporativos').getRecordTypeId();
+		insert budget2;	
+
+		Amount_Budget__c budget3 = new Amount_Budget__c(Name = 'W036-CQ', Activo__c = true, Monto__c = 3000, ActivoQ1__c = false, ActivoQ2__c = false, ActivoQ3__c = true, ActivoQ4__c = false, Presupuesto_UsadoQ3__c = null); 
+		budget3.RecordTypeId = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Corporativos').getRecordTypeId();
+		insert budget3;	
+
+		Amount_Budget__c budget4 = new Amount_Budget__c(Name = 'W037-CQ', Activo__c = true, Monto__c = 3000, ActivoQ1__c = false, ActivoQ2__c = false, ActivoQ3__c = false, ActivoQ4__c = true, Presupuesto_usadoQ4__c = null); 
+		budget4.RecordTypeId = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Corporativos').getRecordTypeId();
+		insert budget4;	
+
+    	Account corporate1 		= new Account(Name = 'Corp1', Id_Presupuesto__c = budget1.Id);
+	    corporate1.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('L2 AM Corporate').getRecordTypeId();
+	    insert corporate1;
+
+	    Account corporate2 		= new Account(Name = 'Corp2', Id_Presupuesto__c = budget2.Id);
+	    corporate2.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('L2 AM Corporate').getRecordTypeId();
+	    insert corporate2;
+
+	    Account corporate3     = new Account(Name = 'Corp3', Id_Presupuesto__c = budget3.Id);
+	    corporate3.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('L2 AM Corporate').getRecordTypeId();
+	    insert corporate3;
+
+	    Account corporate4     = new Account(Name = 'Corp4', Id_Presupuesto__c = budget4.Id);
+	    corporate4.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('L2 AM Corporate').getRecordTypeId();
+	    insert corporate4;
+
+	    Case case1 = new Case(Status = 'Confirmado', Priority = 'Medium', Tipogss__c = 'Waivers Premium', Concepto__c ='CAMBIO DE CLASE', Sub_Concepto__c	= '2 NIVELES', Monto_Waiver__c = 600, se_cobra__c = corporate2.Id);
+	    oldCases.add(case1);
+
+	    Case case2 = new Case(Status = 'Confirmado', Priority = 'Medium', Tipogss__c = 'Waivers Premium', Concepto__c ='CAMBIO DE CLASE', Sub_Concepto__c = '2 NIVELES', Monto_Waiver__c = 340, se_cobra__c = corporate1.Id);
+	    oldCases.add(case2);
+
+	    Case case3 = new Case(Status = 'Confirmado', Priority = 'Medium', Tipogss__c = 'Waivers Premium', Concepto__c ='CAMBIO DE CLASE', Sub_Concepto__c = '2 NIVELES', Monto_Waiver__c = 340, se_cobra__c = corporate3.Id);
+	    oldCases.add(case3);
+
+	    Case case4 = new Case(Status = 'Confirmado', Priority = 'Medium', Tipogss__c = 'Waivers Premium', Concepto__c ='CAMBIO DE CLASE', Sub_Concepto__c = '2 NIVELES', Monto_Waiver__c = 600, se_cobra__c = corporate4.Id);
+	    oldCases.add(case4);
+    	
+	    insert oldCases;
+
+	    case1.Status = 'Cancelado';
+	    case1.se_cobra__c = corporate2.Id;
+	    newCases.add(case1);
+	  
+	    Test.startTest();
+	    	try{
+		       update newCases;
+		    }
+		    catch(Exception e){
+		       /* Boolean expectedExceptionThrown =  e.getMessage().contains('No hay ningún presupuesto activo para esta cuenta') ? true : false;
+		        System.AssertEquals(expectedExceptionThrown, true);*/
+		        System.debug('Error'+e);
+		    }
+
+	    Test.stopTest();
+    }
+
+    @isTest static void testChangeCaseStatus() {
+    	List<Case> oldCases	= new List<Case>();
+    	List<Case> newCases = new List<Case>();
+
+    	User user1 = [SELECT Id, Name, ProfileId, Recibe_presupuesto__c FROM User WHERE  Name = 'MARIA DE LAS NIEVES RODRIGUEZ FERNANDEZ'];
+
+    	Amount_Budget__c budget1 = new Amount_Budget__c(Name = 'W031-CQ', Activo__c = true, Monto__c = 30000, ActivoQ1__c = true, ActivoQ2__c = false, ActivoQ3__c = false, ActivoQ4__c = false); 
+		budget1.RecordTypeId = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Corporativos').getRecordTypeId();
+		insert budget1;	
+
+    	Account corporate1 		= new Account(Name = 'Corp1', Id_Presupuesto__c = budget1.Id);
+	    corporate1.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('L2 AM Corporate').getRecordTypeId();
+	    insert corporate1;
+
+	    Case case1 = new Case(Status = 'Confirmado', Priority = 'Medium', Tipogss__c = 'Waivers Premium', Concepto__c ='CAMBIO DE CLASE', Sub_Concepto__c	= '2 NIVELES', Monto_Waiver__c = 600, se_cobra__c = corporate1.Id);
+	    oldCases.add(case1);
+
+	    Case case2 = new Case(Status = 'Cancelado', Priority = 'Medium', Tipogss__c = 'Waivers Premium', Concepto__c ='CAMBIO DE CLASE', Sub_Concepto__c	= '2 NIVELES', Monto_Waiver__c = 600, se_cobra__c = corporate1.Id);
+	    oldCases.add(case2);
+
+	    insert oldCases;
+
+	    case1.Status = 'Nuevo';
+	    newCases.add(case1);
+
+	    case2.Status = 'Escalado';
+	    newCases.add(case2);
+
+	    System.runAs(user1) {
+	    	try{
+	    		update newCases;
+	    	}
+	    	catch(Exception e) {
+	    		Boolean expectedExceptionThrown =  e.getMessage().contains('El caso ya ha sido cerrado') ? true : false;
+		        System.AssertEquals(expectedExceptionThrown, true);
+		        System.debug('Error'+e);
+	    	}
+	    	
+	    }
+
+    }
+
+    public static Account createAccount(String name, Id budget, String gssId) {
+    	Account acc = new Account(Name = name, Budget__c = budget,Gss_Id_edit__c = gssId);
+	    acc.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('N2 Agency (IATA Branch)').getRecordTypeId();
+    	return acc;
+    }
+
+    public static Amount_Budget__c createBudget(String name, Boolean activo, String gssId, Decimal monto, Decimal ancillriesUsado, Decimal nonAncillariesUsado, Decimal porcentajeAnc, Decimal porcentajeNoAnc) {
+    	
+    	Amount_Budget__c budget = new Amount_Budget__c(Name = name, Activo__c = activo, Gss_Id__c = gssId, Monto__c = monto, Ancillaries_usado__c	= ancillriesUsado, Non_Ancillaries_usado__c = nonAncillariesUsado, Porcentaje_Ancillaries__c = porcentajeAnc, Porcentaje_no_ancillaries__c = porcentajeNoAnc);
+    	budget.RecordTypeId = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Q1').getRecordTypeId();
+
+    	return budget;
+    }
+
+    @isTest static void testRecalculatedAgencies() {
+
+    	List<Case> 			   newCases = new List<Case>();
+    	List<Case> 			   oldCases = new List<Case>();
+    	List<Account> 		   accounts = new List<Account>();
+    	List<Amount_Budget__c> budgets  = new List<Amount_Budget__c>();
+
+	    Amount_Budget__c budget = createBudget('W-008-Q4', true, 'W-008', 50000, 0, 0, 80, 20);
+	   	insert budget;
+
+	   	Account acc1 = createAccount('ARMEX', budget.Id, 'W-008');
+	    insert acc1;
+
+	    Case case1 = new Case(Status = 'Confirmado', Priority = 'Medium', Tipogss__c = 'Waivers Premium', Concepto__c ='ASIENTOS', Sub_Concepto__c	= 'AM PLUS', Monto_Waiver__c = 150, se_cobra__c = acc1.Id, Recalculate__c = true);
+	    oldCases.add(case1);
+
+	    Case case2 = new Case(Status = 'Confirmado', Priority = 'Medium', Tipogss__c = 'Waivers Premium', Concepto__c ='CAMBIO DE CLASE', Sub_Concepto__c	= '1 NIVEL', Monto_Waiver__c = 220, se_cobra__c = acc1.Id, Recalculate__c = true);
+	    oldCases.add(case2);
+
+	    try{
+	        insert oldCases;
+        }
+        catch(Exception e){
+	         /* Boolean expectedExceptionThrown =  e.getMessage().contains('No hay ningún presupuesto activo para esta cuenta') ? true : false;
+	         System.AssertEquals(expectedExceptionThrown, true);*/
+	         System.debug('Error'+e);
+       }
+	   
+	  	case1.Status 		 = 'Cancelado';
+	  
+	  	newCases.add(case1);
+
+	  	Test.startTest();
+	    	try{
+	        	update newCases;
+		      }
+		      catch(Exception e){
+		        /*Boolean expectedExceptionThrown =  e.getMessage().contains('No hay ningún presupuesto activo para esta cuenta') ? true : false;
+		        System.AssertEquals(expectedExceptionThrown, true);*/
+		        System.debug('Error'+e);
+		      }
+	    Test.stopTest();
+	   	
+    }
+
+     @isTest static void testRecalculatedCorporates() {
+
+    	List<Case> 			   newCases = new List<Case>();
+    	List<Case> 			   oldCases = new List<Case>();
+    	List<Account> 		   accounts = new List<Account>();
+    	List<Amount_Budget__c> budgets  = new List<Amount_Budget__c>();
+
+    	Amount_Budget__c budget1 = new Amount_Budget__c(Name = 'C-015', Activo__c = true, Monto__c = 3000, ActivoQ1__c = false, ActivoQ2__c = false, ActivoQ3__c = false, ActivoQ4__c = true); 
+		budget1.RecordTypeId = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Corporativos').getRecordTypeId();
+		insert budget1;	
+
+    	Account corporate1 		= new Account(Name = 'CALL CENTER', Id_Presupuesto__c = budget1.Id);
+	    corporate1.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('L2 AM Corporate').getRecordTypeId();
+	    insert corporate1;
+
+	    Case case1 = new Case(Status = 'Confirmado', Priority = 'Medium', Tipogss__c = 'Waivers Premium', Concepto__c ='ASIENTOS', Sub_Concepto__c	= 'AM PLUS', Monto_Waiver__c = 150, se_cobra__c = corporate1.Id, Recalculate__c = true);
+	    oldCases.add(case1);
+
+	    Case case2 = new Case(Status = 'Confirmado', Priority = 'Medium', Tipogss__c = 'Waivers Premium', Concepto__c ='ASIENTOS', Sub_Concepto__c	= 'AM PLUS', Monto_Waiver__c = 150, se_cobra__c = corporate1.Id, Recalculate__c = true);
+	    oldCases.add(case2);
+
+	    try{
+	        insert oldCases;
+        }
+        catch(Exception e){
+	         /* Boolean expectedExceptionThrown =  e.getMessage().contains('No hay ningún presupuesto activo para esta cuenta') ? true : false;
+	         System.AssertEquals(expectedExceptionThrown, true);*/
+	         System.debug('Error'+e);
+       }
+	  	
+	  	Test.startTest();
+		  	
+		  	case1.Status = 'Cancelado';
+		  	update case1;
+	  	Test.stopTest();
+	    
+	   	
+    }
+
+   @isTest static void testRecalculatedExecutives() {
+
+    	List<Case> 			   newCases   = new List<Case>();
+    	List<Case> 			   oldCases   = new List<Case>();
+    	List<User> 		   	   executives = new List<User>();
+    	List<Amount_Budget__c> budgets    = new List<Amount_Budget__c>();
+
+    	Amount_Budget__c budget1 = [SELECT Id, Name, Activo__c, Monto__c, ActivoQ1__c, ActivoQ2__c, ActivoQ3__c, ActivoQ4__c FROM Amount_Budget__c WHERE Name = 'W030-EQ'];
+
+    	Account corporate1 		= new Account(Name = 'CALL CENTER', Id_Presupuesto__c = budget1.Id);
+	    corporate1.RecordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByName().get('L2 AM Corporate').getRecordTypeId();
+	    insert corporate1;
+
+	   User executive1 = [SELECT Id, Name, Id_Presupuesto__c, Recibe_presupuesto__c FROM User WHERE Recibe_presupuesto__c = true AND Name = 'CELIA MARIA SONIA OLIVERAS ZAYAS'];
+
+	    executive1.Id_Presupuesto__c = budget1.Id;
+    	executives.add(executive1);
+
+    	update executives;
+
+    	Case case1 = new Case(Status = 'Confirmado', Priority = 'Medium', Tipogss__c = 'Waivers Premium', Concepto__c ='CAMBIO DE CLASE', Sub_Concepto__c = '2 NIVELES', Monto_Waiver__c = 600, Usuario__c = executive1.Id, Recalculate__c = true);
+	    oldCases.add(case1);
+
+	    try{
+	        insert oldCases;
+        }
+        catch(Exception e){
+	         /* Boolean expectedExceptionThrown =  e.getMessage().contains('No hay ningún presupuesto activo para esta cuenta') ? true : false;
+	         System.AssertEquals(expectedExceptionThrown, true);*/
+	         System.debug('Error'+e);
+       }
+	   
+	  	case1.Status 		 = 'Cancelado';
+	  
+	  	newCases.add(case1);
+
+	  	Test.startTest();
+	    	try{
+	        	update newCases;
+		      }
+		      catch(Exception e){
+		        /*Boolean expectedExceptionThrown =  e.getMessage().contains('No hay ningún presupuesto activo para esta cuenta') ? true : false;
+		        System.AssertEquals(expectedExceptionThrown, true);*/
+		        System.debug('Error'+e);
+		      }
+	    Test.stopTest();
+	   	
+    }
+
+}
