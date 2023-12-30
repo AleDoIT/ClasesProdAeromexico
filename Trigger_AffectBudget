@@ -1,0 +1,267 @@
+/**
+ *  @Name           AffectBudget
+ *  @Copyright      DoIT Cloud Consulting
+ *  @Author         Geovany Ruiz <geovany@doitcloud.consulting>  
+ *  @Description    Trigger that Add and subtract amounts to the budgets for corporates, agencies and executives
+ * 	@LastModifiedBy José Alejandro Álvarez Hernández <josealejandro.alvarez@doitcloud.consulting
+**/
+
+trigger Trigger_AffectBudget on Case (after insert, after update, before update) { 
+
+    Set<String> accIds = new Set<String>();
+
+    List<Account>          accounts             = new List<Account>();
+    List<User>             executives           = new List<User>();  
+    List<Account>          agencies             = new List<Account>();
+    List<Account>          corporates           = new List<Account>();
+    List<Amount_Budget__c> ancBudgetsToUpdate   = new List<Amount_Budget__c>();
+    List<Amount_Budget__c> noAncBudgetsToUpdate = new List<Amount_Budget__c>();
+    List<Amount_Budget__c> corpBudgetsToUpdate  = new List<Amount_Budget__c>();
+    List<Amount_Budget__c> updateAgencies       = new List<Amount_Budget__c>();
+    List<Amount_Budget__c> agenBudgetsToUpdate  = new List<Amount_Budget__c>();
+    List<Amount_Budget__c> updateCorpBudgets    = new List<Amount_Budget__c>();
+    List<Amount_Budget__c> execBudgetsToUpdate  = new List<Amount_Budget__c>();
+//  List<List<String>>     discountToNonAnc     = new List<List<String>>();
+    List<List<String>>     discountToAgencies   = new List<List<String>>();
+    List<List<String>>     adjustNonAnc         = new List<List<String>>();
+    List<List<String>>     adjustAnc            = new List<List<String>>();
+    List<List<String>>     discountToCorporates = new List<List<String>>();
+    List<List<String>>     discountToExecutives = new List<List<String>>();
+    List<Case>             casesToBeUpdated     = new List<Case>();
+    List<Case>             casesForExecutives   = new List<Case>();
+ 
+
+    Map<Id,Decimal> amountNonAnc  = new Map<Id,Decimal>();
+    Map<Id,Decimal> amountAnc     = new Map<Id,Decimal>();
+    Map<Id,List<Decimal>> amountAgenMap = new Map<Id,List<Decimal>>();
+    Map<Id,List<Decimal>> amountCorpMap = new Map<Id,List<Decimal>>();
+    Map<Id,List<Decimal>> amountExecMap = new Map<Id,List<Decimal>>();
+    Map<Id,Amount_Budget__c> budgets; 
+
+    Boolean affectAgenciesBudget = false; //indicates if there are budgets that will be affected
+
+    for (Case c: Trigger.new) {
+        accIds.add(c.se_cobra__c);  
+    } 
+
+    if (Trigger.isAfter && AffectBudgetHandler.getFlagRunTrigger() && Trigger.isUpdate) {
+
+        accounts  = [SELECT Id, Name, Gss_Id__c, Gss_Idl2__c, Budget__c, IATA_7__c, RecordType.Name, Id_Presupuesto__c FROM Account WHERE (RecordType.Name = 'N2 Agency (IATA Branch)' AND Id IN: accIds) OR (RecordType.Name = 'L2 AM Corporate' AND Id IN: accIds)]; // get all accounts Corporate'
+     
+        executives  = [SELECT Id, Name, Presupuesto_disponible__c, Id_Presupuesto__c, IsActive, Recibe_presupuesto__c FROM User WHERE IsActive = true AND Recibe_presupuesto__c = true]; // get executives
+        
+        budgets = new Map<Id,Amount_Budget__c>([SELECT Id, Activo__c, Name, Gss_Id__c,Ancillaries_usado_Q1__c, Ancillaries_usado_Q2__c, Ancillaries_usado_Q3__c, Ancillaries_usado_Q4__c, Non_Ancillaries_usado_Q1__c, Non_Ancillaries_usado_Q2__c,Non_Ancillaries_usado_Q3__c,Non_Ancillaries_usado_Q4__c, RecordType.Name, ActivoQ1__c, ActivoQ2__c, ActivoQ3__c, ActivoQ4__c, Presupuesto_UsadoQ1__c, Presupuesto_UsadoQ2__c, Presupuesto_UsadoQ3__c, Presupuesto_usadoQ4__c, CurrencyIsoCode FROM Amount_Budget__c WHERE Activo__c = true]);  //get the active budgets
+
+        AffectBudgetHandler.changeFlagRunTrigger(false);
+
+        for (Account a : accounts) {
+            if (a.RecordType.Name == 'N2 Agency (IATA Branch)') {
+                agencies.add(a);
+                System.debug(string.valueOf(agencies));
+            }else if (a.RecordType.Name == 'L2 AM Corporate') {
+                corporates.add(a); 
+            }
+        }
+
+        Map<Id,Case> newMap = Trigger.newMap;
+        Map<Id,Case> oldMap = Trigger.oldMap;
+
+        
+        
+
+        for (Case c : Trigger.new) {
+            if (c.Usuario__c != null && c.se_cobra__c == null) {
+                casesForExecutives.add(c); //only for validate if exist cases that will affect executives
+            }
+        } 
+
+        if(agencies.size() > 0){
+            discountToAgencies = AffectBudgetHandler.discountToUpdateAgencies(newMap, oldMap, agencies, budgets);
+        }
+        if(corporates.size() > 0){
+            discountToCorporates = AffectBudgetHandler.discountToUpdateCorporates(newMap, oldMap, corporates, budgets);
+        }
+        if (casesForExecutives.size() > 0) {
+            discountToExecutives = AffectBudgetHandler.discountToUpdateExecutives(newMap, oldMap, executives, budgets);
+        }
+
+        if(AffectBudgetHandler.getFlagDIscount() && (discountToAgencies.size() > 0 || discountToCorporates.size() > 0 || discountToExecutives.size() > 0)) { 
+            List<Amount_Budget__c> corporatesBudgets = new List<Amount_Budget__c>();
+            List<Amount_Budget__c> executivesBudgets = new List<Amount_Budget__c>();
+            List<Amount_Budget__c> agenciesBudgets   = new List<Amount_Budget__c>();
+    
+            AffectBudgetHandler.changeFlagRunDiscount(false); //Change the status of the flag for execute only once 
+            if (discountToAgencies.size() > 0) {
+                amountAgenMap = AffectBudgetHandler.agenciesBudgetsToUpdateMap(discountToAgencies, budgets);
+                Set<Id> budgetsSet = budgets.keySet();
+                for (Id b : budgetsSet) {
+                    if(amountAgenMap.containsKey(b)) {
+                        Amount_Budget__c recordBudget = budgets.get(b);
+                        if(recordBudget.ActivoQ1__c == true){
+                            recordBudget.Presupuesto_UsadoQ1__c = amountAgenMap.get(b)[0];
+                            recordBudget.Ancillaries_usado_Q1__c = amountAgenMap.get(b)[1];
+                            recordBudget.Non_Ancillaries_Usado_Q1__c = amountAgenMap.get(b)[2];
+                            agenBudgetsToUpdate.add(recordBudget);
+                        }else if (recordBudget.ActivoQ2__c == true) {
+                            recordBudget.Presupuesto_UsadoQ2__c = amountAgenMap.get(b)[0];
+                            recordBudget.Ancillaries_usado_Q2__c = amountAgenMap.get(b)[1];
+                            recordBudget.Non_Ancillaries_Usado_Q2__c = amountAgenMap.get(b)[2];
+                            agenBudgetsToUpdate.add(recordBudget);
+                        }else if (recordBudget.ActivoQ3__c == true) {
+                            recordBudget.Presupuesto_UsadoQ3__c = amountAgenMap.get(b)[0];
+                            recordBudget.Ancillaries_usado_Q3__c = amountAgenMap.get(b)[1];
+                            recordBudget.Non_Ancillaries_Usado_Q3__c = amountAgenMap.get(b)[2];
+                            agenBudgetsToUpdate.add(recordBudget);
+                        }else if (recordBudget.ActivoQ4__c == true) {
+                            recordBudget.Presupuesto_UsadoQ4__c = amountAgenMap.get(b)[0];
+                            recordBudget.Ancillaries_usado_Q4__c = amountAgenMap.get(b)[1];
+                            recordBudget.Non_Ancillaries_Usado_Q4__c = amountAgenMap.get(b)[2]; 
+                            agenBudgetsToUpdate.add(recordBudget);
+                        }
+                    }
+                }
+            }
+            
+           if (discountToCorporates.size() > 0){
+                amountCorpMap = AffectBudgetHandler.corporateBudgetsToUpdateMap(discountToCorporates, budgets);
+                Set<Id> budgetsSet = budgets.keySet();
+                for (Id b : budgetsSet){
+                    if(amountCorpMap.containsKey(b)) {
+                        Amount_Budget__c recordBudget = budgets.get(b);
+                        if(recordBudget.ActivoQ1__c == true){
+                            recordBudget.Presupuesto_UsadoQ1__c = amountCorpMap.get(b)[0];
+                            recordBudget.Ancillaries_usado_Q1__c = amountCorpMap.get(b)[1];
+                            recordBudget.Non_Ancillaries_Usado_Q1__c = amountCorpMap.get(b)[2];
+                            corpBudgetsToUpdate.add(recordBudget);
+                        }else if (recordBudget.ActivoQ2__c == true) {
+                            recordBudget.Presupuesto_UsadoQ2__c = amountCorpMap.get(b)[0];
+                            recordBudget.Ancillaries_usado_Q2__c = amountCorpMap.get(b)[1];
+                            recordBudget.Non_Ancillaries_Usado_Q2__c = amountCorpMap.get(b)[2];
+                            corpBudgetsToUpdate.add(recordBudget);
+                        }else if (recordBudget.ActivoQ3__c == true) {
+                            recordBudget.Presupuesto_UsadoQ3__c = amountCorpMap.get(b)[0];
+                            recordBudget.Ancillaries_usado_Q3__c = amountCorpMap.get(b)[1];
+                            recordBudget.Non_Ancillaries_Usado_Q3__c = amountCorpMap.get(b)[2];
+                            corpBudgetsToUpdate.add(recordBudget);
+                        }else if (recordBudget.ActivoQ4__c == true) {
+                            recordBudget.Presupuesto_UsadoQ4__c = amountCorpMap.get(b)[0];
+                            recordBudget.Ancillaries_usado_Q4__c = amountCorpMap.get(b)[1];
+                            recordBudget.Non_Ancillaries_Usado_Q4__c = amountCorpMap.get(b)[2]; 
+                            corpBudgetsToUpdate.add(recordBudget);
+                        }
+                    }
+                }
+            }
+    
+            if (discountToExecutives.size() > 0) {
+                amountExecMap = AffectBudgetHandler.executivesBudgetsToUpdateMap(discountToExecutives, budgets);
+                Set<Id> budgetsSet = budgets.keySet();
+                for (Id b : budgetsSet) {
+                    if(amountExecMap.containsKey(b)) {
+                        Amount_Budget__c recordBudget = budgets.get(b);
+                        if(recordBudget.ActivoQ1__c == true){
+                            recordBudget.Presupuesto_UsadoQ1__c = amountExecMap.get(b)[0];
+                            recordBudget.Ancillaries_usado_Q1__c = amountExecMap.get(b)[1];
+                            recordBudget.Non_Ancillaries_Usado_Q1__c = amountExecMap.get(b)[2]; 
+                            execBudgetsToUpdate.add(recordBudget);
+                        }else if (recordBudget.ActivoQ2__c == true) {
+                            recordBudget.Presupuesto_UsadoQ2__c = amountExecMap.get(b)[0];
+                            recordBudget.Ancillaries_usado_Q2__c = amountExecMap.get(b)[1];
+                            recordBudget.Non_Ancillaries_Usado_Q2__c = amountExecMap.get(b)[2]; 
+                            execBudgetsToUpdate.add(recordBudget);
+                        }else if (recordBudget.ActivoQ3__c == true) {
+                            recordBudget.Presupuesto_UsadoQ3__c = amountExecMap.get(b)[0];
+                            recordBudget.Ancillaries_usado_Q3__c = amountExecMap.get(b)[1];
+                            recordBudget.Non_Ancillaries_Usado_Q3__c = amountExecMap.get(b)[2]; 
+                            execBudgetsToUpdate.add(recordBudget);
+                        }else if (recordBudget.ActivoQ4__c == true) {
+                            recordBudget.Presupuesto_usadoQ4__c = amountExecMap.get(b)[0];
+                            recordBudget.Ancillaries_usado_Q4__c = amountExecMap.get(b)[1];
+                            recordBudget.Non_Ancillaries_Usado_Q4__c = amountExecMap.get(b)[2]; 
+                            execBudgetsToUpdate.add(recordBudget);
+                        }
+                    }
+                }
+            }
+            //Método actualizado para actualizar corporates
+            if(agenBudgetsToUpdate.size() > 0){
+                update agenBudgetsToUpdate;
+            }
+            if (corpBudgetsToUpdate.size() > 0){
+                update corpBudgetsToUpdate;
+            }
+            if (execBudgetsToUpdate.size() > 0){
+                update execBudgetsToUpdate;   
+            }   
+        }
+
+    }
+    
+    if( Trigger.isInsert && Trigger.isAfter){
+            List<Case> casesCreated = [SELECT Id, CaseNumber, CreatedDate, Tipogss__c, Status FROM CASE WHERE Id IN: Trigger.New  ];
+            for(Case c: casesCreated){
+                if( c.Tipogss__c == 'Waivers Standard' || c.Tipogss__c == 'Waivers Premium' ||
+                    c.Tipogss__c == 'UATP' || c.Tipogss__c == 'Autorizaciones Especiales' ){  // types that generate codigo_it__c
+                    if(c.Status == 'Confirmado'){
+                        switch on c.Tipogss__c {
+                            when 'Waivers Premium'{
+                                c.codigo_it__c = String.valueOf(c.CreatedDate.year()).right(1) + 'MXSS' + String.valueOf(c.CaseNumber).right(5) + 'C' ;
+                            }
+                            when 'Waivers Standard'{
+                                c.codigo_it__c = String.valueOf(c.CreatedDate.year()).right(1) + 'MXRU' + String.valueOf(c.CaseNumber).right(5) + 'C' ;
+                            }
+                            when 'UATP'{
+                                c.codigo_it__c = String.valueOf(c.CreatedDate.year()).right(1) + 'MXTP' + String.valueOf(c.CaseNumber).right(5) + 'C' ;
+                            }
+                            when 'Autorizaciones Especiales'{
+                                c.codigo_it__c = String.valueOf(c.CreatedDate.year()).right(1) + 'MXLA' + String.valueOf(c.CaseNumber).right(5) + 'C' ;
+                            }
+                        }
+                        casesToBeUpdated.add(c);
+                    }
+                }
+            }
+            if(casesToBeUpdated.size()>0){ 
+                update casesToBeUpdated;
+            }    
+    }
+    if(Trigger.isUpdate && Trigger.isBefore){
+            Profile gssSupervisor = [SELECT Id, Name FROM Profile WHERE Name = 'Gss Supervisor'];
+            Profile gssAssociate  = [SELECT Id, Name FROM Profile WHERE Name = 'Gss Associate'];
+            Profile gerente       = [SELECT Id, Name FROM Profile WHERE Name = 'Gerente'];
+            String  userProfile = UserInfo.getProfileId();
+
+            for(Id caseId: Trigger.newMap.keySet()){
+                if(Trigger.newMap.get(caseId).Status == 'Confirmado' && Trigger.oldMap.get(caseId).Status != 'Confirmado'){
+                    if( Trigger.newMap.get(caseId).Tipogss__c == 'Waivers Standard'  || 
+                        Trigger.newMap.get(caseId).Tipogss__c == 'Waivers Premium'  ||
+                        Trigger.newMap.get(caseId).Tipogss__c == 'UATP' || 
+                        Trigger.newMap.get(caseId).Tipogss__c == 'Autorizaciones Especiales' ){
+                        switch on Trigger.newMap.get(caseId).Tipogss__c {
+                            when 'Waivers Premium'{
+                                Trigger.newMap.get(caseId).codigo_it__c = String.valueOf(Trigger.newMap.get(caseId).CreatedDate.year()).right(1) + 'MXSS' + String.valueOf(Trigger.newMap.get(caseId).CaseNumber).right(5) + 'C' ;
+                            }
+                            when 'Waivers Standard'{
+                                Trigger.newMap.get(caseId).codigo_it__c = String.valueOf(Trigger.newMap.get(caseId).CreatedDate.year()).right(1) + 'MXRU' + String.valueOf(Trigger.newMap.get(caseId).CaseNumber).right(5) + 'C' ;
+                            }
+                            when 'UATP'{
+                                Trigger.newMap.get(caseId).codigo_it__c = String.valueOf(Trigger.newMap.get(caseId).CreatedDate.year()).right(1) + 'MXTP' + String.valueOf(Trigger.newMap.get(caseId).CaseNumber).right(5) + 'C' ;
+                            }
+                            when 'Autorizaciones Especiales'{
+                                Trigger.newMap.get(caseId).codigo_it__c = String.valueOf(Trigger.newMap.get(caseId).CreatedDate.year()).right(1) + 'MXLA' + String.valueOf(Trigger.newMap.get(caseId).CaseNumber).right(5) + 'C' ;
+                            }
+                        }
+                    }
+                }
+                if (Trigger.newMap.get(caseId).Status == 'Nuevo' && (Trigger.oldMap.get(caseId).Status == 'Confirmado' || Trigger.oldMap.get(caseId).Status == 'Cancelado' || Trigger.oldMap.get(caseId).Status == 'Negado') && (gssSupervisor.Id == userProfile || gssAssociate.Id == userProfile || gerente.Id == userProfile)){
+                        Trigger.newMap.get(caseId).addError('El caso ya ha sido cerrado');
+                }else if (Trigger.newMap.get(caseId).Status == 'Escalado' && (Trigger.oldMap.get(caseId).Status == 'Confirmado' || Trigger.oldMap.get(caseId).Status == 'Cancelado' || Trigger.oldMap.get(caseId).Status == 'Negado') && (gssSupervisor.Id == userProfile || gssAssociate.Id == userProfile || gerente.Id == userProfile)) {
+                        Trigger.newMap.get(caseId).addError('El caso ya ha sido cerrado');
+                }
+            }           
+        
+    }
+
+
+   
+}
