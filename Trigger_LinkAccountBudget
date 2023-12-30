@@ -1,0 +1,106 @@
+/**
+ *  @Name           Trigger_LinkAccountBudget
+ *  @Copyright      DoIT Cloud Consulting
+ *  @Author         Geovany Ruiz <geovany@doitcloud.consulting>
+ * @description 	This is a trigger that link active budgets with his respective Accounts through his Gss Id. This trigger only applies for L2 Agency record types.
+**/
+
+trigger Trigger_LinkAccountBudget on Amount_Budget__c (before insert, before update, after insert, after update) {
+
+	List<Account> accountsToUpdate 	= new List<Account>();
+	List<User> 	  usersToUpdate 	= new List<User>(); 
+
+
+	if (Trigger.isBefore) { 
+		if (Trigger.isInsert) {  
+			//List<Account> accounts 		   = [SELECT Id, Name, Gss_Idl2__c, Budget__c, RecordType.Name FROM Account WHERE RecordType.Name = 'N2 Agency (IATA Branch)']; // Agency 
+			List<Account> accountsReturned = LinkAccountBudget.putBudgets(Trigger.new); //call to method putBudgets
+			for (Account acc : accountsReturned) { 
+				accountsToUpdate.add(acc);		// Add the returned accounts to accountsToUpdate list 
+			}
+
+		}else if (Trigger.isUpdate) {
+			System.debug('before Update');
+		}
+	}else if (Trigger.isAfter) { // For corporates and Executives
+		if (Trigger.isInsert) {
+			Set<String> gssIds = new Set<String>();
+
+			for (Amount_Budget__c b: Trigger.new) {
+				gssIds.add(b.Presupuesto_corporativo__c);
+			}
+
+			List<Account> corporates = [SELECT Id, Name, RecordType.Name, Presupuesto_disponible__c, Id_Presupuesto__c FROM Account WHERE RecordType.Name = 'L2 AM Corporate' AND Id IN: gssIds]; //Corporate
+
+			List<Account> corporatesReturned = LinkAccountBudget.putIdBudgets(Trigger.new, corporates); // put id budgets and amount on corporates
+
+			for (Account acc : corporatesReturned) {
+				accountsToUpdate.add(acc);
+			}
+
+			List<User> executives = [SELECT Id, Name, Presupuesto_disponible__c, Id_Presupuesto__c, Recibe_presupuesto__c FROM User WHERE Recibe_presupuesto__c = true]; //executives
+
+			List<User> executivesReturned = LinkAccountBudget.putIdBudgetsToExecutives(Trigger.new, executives); // put id budgets and amount on executives
+
+			for (User user : executivesReturned) {
+				usersToUpdate.add(user);
+			}
+		}else if (Trigger.isUpdate) {
+            Id agenciesRT = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Agencias').getRecordTypeId();
+            Id corporatesRT = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Corporativos').getRecordTypeId();
+			Id executivesRT = Schema.SObjectType.Amount_Budget__c.getRecordTypeInfosByName().get('Ejecutivos').getRecordTypeId();
+            
+            Set<String> gssAgenciesIds = new Set<String>();
+            Set<String> gssCorporatesIds = new Set<String>();
+            Set<String> gssEjecutivosIds = new Set<String>();
+            
+            for(Amount_budget__c gssAux: trigger.new){
+                if(gssAux.RecordTypeId != corporatesRT && gssAux.RecordTypeId != executivesRT){
+                    gssAgenciesIds.add(gssAux.Gss_Id__c);
+                    System.debug('Entra a Agencies');
+                }
+                else if(gssAux.RecordTypeId == corporatesRT){
+                    gssCorporatesIds.add(gssAux.Presupuesto_corporativo__c);
+                    System.debug('Entra a Corporates');
+                }
+                else if(gssAux.RecordTypeId == executivesRT){
+                    gssEjecutivosIds.add(gssAux.Usuario__c);
+                    System.debug('Entra a Ejecutivos');
+                }
+            }
+            if(gssAgenciesIds != null){
+                List<Account> accountsReturned = LinkAccountBudget.putAndRemoveBudget(Trigger.newMap, Trigger.oldMap, gssAgenciesIds); //call to method putAndRemoveBudget
+				for (Account accAux1 : accountsReturned) {  
+				accountsToUpdate.add(accAux1);		// Add the returned accounts to accountsToUpdate list
+				}
+            }
+            if(gssCorporatesIds != null){
+			List<Account> corporatesReturned = LinkAccountBudget.putAndRemoveCorpBudget(Trigger.newMap, Trigger.oldMap, gssCorporatesIds); //corporates
+			for (Account accAux2 : corporatesReturned) {
+				accountsToUpdate.add(accAux2);
+				}
+            }
+            if(gssEjecutivosIds != null){
+               List<User> executivesReturned = LinkAccountBudget.putAndRemoveExecBudget(Trigger.newMap, Trigger.oldMap, gssEjecutivosIds);//Executives
+				if (executivesReturned.size() > 0 ) {
+					System.debug('La lista me devuelve algo');
+				}else {
+				System.debug('la lista no me devuelve nada');
+				}
+				for (User user : executivesReturned) {
+				usersToUpdate.add(user);
+				} 
+            }
+			
+		}
+	}
+
+	if (accountsToUpdate.size() > 0) {
+		update accountsToUpdate;
+	} 
+
+	if (usersToUpdate.size() > 0) {
+		update usersToUpdate;
+	}
+	
+}
